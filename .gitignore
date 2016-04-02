@@ -8,3 +8,5 @@ BaaerServer/ipch/
 BaaerServer/Debug/
 BaaerServer/BaaerServer/Debug
 *.opensdf
+
+*.user
