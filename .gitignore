@@ -1,3 +1,9 @@
 *.sdf
+
 BaaerClient/ipch/
+BaaerClient/Debug/
+BaaerClient/BaaerClient/Debug
+
 BaaerServer/ipch/
+BaaerServer/Debug/
+BaaerServer/BaaerServer/Debug
