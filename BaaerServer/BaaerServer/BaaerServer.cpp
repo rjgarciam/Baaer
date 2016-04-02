@@ -1,4 +1,4 @@
-// Baaer.cpp: define el punto de entrada de la aplicación de consola.
+// BaaerServer.cpp: define el punto de entrada de la aplicación de consola.
 //
 
 #include "stdafx.h"
