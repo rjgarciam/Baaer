@@ -7,3 +7,4 @@ BaaerClient/BaaerClient/Debug
 BaaerServer/ipch/
 BaaerServer/Debug/
 BaaerServer/BaaerServer/Debug
+*.opensdf
