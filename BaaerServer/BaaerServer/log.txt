@@ -1,0 +1,2 @@
+[narry] (2016-4-7 21:50:41.554) yo soy narry
+[narry] (2016-4-7 21:50:59.488) ahora por fin funciona
