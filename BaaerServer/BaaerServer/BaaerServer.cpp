@@ -1,34 +1,49 @@
 #include "stdafx.h"
-#undef UNICODE
 
-#define WIN32_LEAN_AND_MEAN
-
-#include <windows.h>
-#include <winsock2.h>
-#include <ws2tcpip.h>
-#include <stdlib.h>
-#include <stdio.h>
-#include <string>
-#include <iostream>
-#include <mutex>
-#include <iostream>
-#include <fstream>
-#include <thread>
-#include <cmath>
-#include "windows.h"
-
-using namespace std;
-
-// Need to link with Ws2_32.lib
-#pragma comment (lib, "Ws2_32.lib")
-// #pragma comment (lib, "Mswsock.lib")
-
-#define DEFAULT_BUFLEN 512
-#define DEFAULT_PORT "27010"
 
 mutex logFileMutex;
 ofstream logFile;
+//definiciones de donde se guardan las cosas solo falta que ademas de llegar se guarden las cosas en donde tienten que estar
+/** Class *****************************************************/
+/*
+ * This struct will contain all the information regarding a message
+ */
+struct Messages {
+  static unsigned int s_last_id; // keep track of IDs to assign it automatically
+  unsigned int id;
+  string user_name;
+  string content;
 
+  int year;
+  int month;
+  int day;
+  
+  int hour;
+  int min;
+  int seg;
+
+  Messages(const string& a_user_name, const string& a_content) :
+    user_name(a_user_name), content(a_content), id(++s_last_id)
+  {
+  }
+};
+list<Messages*> g_messages;
+map<unsigned int, list<Messages*>::iterator> g_messages_by_index;
+struct users
+{
+	string ID;
+	struct mensajes
+	{
+		int id_mensaje;
+	};
+	struct persona
+	{
+		string identifier;
+	};
+};
+unsigned int Messages::s_last_id = 0;
+
+list<users*> g_users;
 
 
 bool EscribirLog(string DATA, string ID){ //return 1: ok
@@ -50,7 +65,35 @@ bool EscribirLog(string DATA, string ID){ //return 1: ok
 	
 	return 1;
 }
+//funcion para imprimir el timeline cambiar los cout por contenido a enviar y asi enviamos eso
+int print_timeline(const string& user_name, bool show_id)
+{
+  int count = 0;
 
+  cout << endl << "----------------" << endl;
+  if (user_name.empty()) { // all messages, no filter
+    for (auto it = g_messages.begin(); it != g_messages.end(); ++it) {
+      if (show_id) { // print ID of message
+        cout << (*it)->id << " ";
+      }
+      cout << "[@" << (*it)->user_name << "]: " << (*it)->content << endl;
+    }
+    count = g_messages.size();
+  } else { // specific user
+    for (auto it = g_messages.begin(); it != g_messages.end(); ++it) {
+      if ((*it)->user_name == user_name) {
+        if (show_id) { // print ID of message
+          cout << (*it)->id << " ";
+        }
+        cout << "[@" << user_name << "]: " << (*it)->content << endl;
+        ++count;
+      }
+    }
+  }
+  cout << "----------------" << endl;
+
+  return count;
+}
 string serialize(const string& str){
 	int len = str.length();
 	const string strlen((char*)&len, 4);
@@ -68,6 +111,7 @@ int Recibir(SOCKET ClientSocket){ //return 0 = OK
 	char *auxiliar, *ACK_char;
 	int recvbuflen = DEFAULT_BUFLEN;
 	string ID, TAG, DATA, ACK;
+	string sep="////";//por poner algo
 	bool primeraVez = 1;
 
 	// Receive until the peer shuts down the connection
@@ -84,16 +128,15 @@ int Recibir(SOCKET ClientSocket){ //return 0 = OK
 				for (int ii = 0; ii < DEFAULT_BUFLEN; ii++){
 					auxiliar[ii] = recvbuf[ii];
 				}
-				//printf("\n\nBytes received: %d\n", iResult);
+				
 				//deserialize:
 				TAG = deserialize(auxiliar);
-				//cout << "TAG: " << TAG;
 				if (TAG.compare("END") != 0){
 						DATA = deserialize(auxiliar + 4 + TAG.length());
 						cout << "\n\nID: " << DATA;
 						ID = DATA;
 					}
-				delete[] auxiliar; //el problema del heap lo da aqui (y lo mismo en la parte del if para WRITELINE)
+				delete[] auxiliar; 
 			}
 			else { //WRITELINE
 				auxiliar = new char[DEFAULT_BUFLEN+1];
@@ -101,7 +144,7 @@ int Recibir(SOCKET ClientSocket){ //return 0 = OK
 				for (int ii = 0; ii < DEFAULT_BUFLEN; ii++){
 					auxiliar[ii] = recvbuf[ii];
 				}
-				//printf("\n\nBytes received: %d\n", iResult);
+
 				//deserialize:
 				TAG = deserialize(auxiliar);
 				cout << "\n\nID: " << ID << endl;
@@ -111,6 +154,7 @@ int Recibir(SOCKET ClientSocket){ //return 0 = OK
 					cout << "\nDATA: " << DATA;
 					EscribirLog(DATA, ID);
 				}
+				
 				delete[] auxiliar;
 			}
 
@@ -133,7 +177,6 @@ int Recibir(SOCKET ClientSocket){ //return 0 = OK
 				WSACleanup();
 				return 1;
 			}
-			//printf("\nBytes Sent: %ld\n", iResult);
 		}
 		else if (iResult == 0) {
 			printf("\nConnection closing...\n");

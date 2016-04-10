@@ -1,25 +1,5 @@
 #include "stdafx.h"
-#define WIN32_LEAN_AND_MEAN
 
-#include <windows.h>
-#include <winsock2.h>
-#include <ws2tcpip.h>
-#include <stdlib.h>
-#include <stdio.h>
-#include <string>
-#include <iostream>
-
-using namespace std;
-
-
-// Need to link with Ws2_32.lib, Mswsock.lib, and Advapi32.lib
-#pragma comment (lib, "Ws2_32.lib")
-#pragma comment (lib, "Mswsock.lib")
-#pragma comment (lib, "AdvApi32.lib")
-
-
-#define DEFAULT_BUFLEN 512
-#define DEFAULT_PORT "27010"
 
 string serialize(const string& str){
 	int len = str.length();
@@ -50,7 +30,6 @@ int Enviar(SOCKET ConnectSocket, char* sendbuf, int longitud){ // return 0 = OK
 		WSACleanup();
 		return 1;
 	}
-	printf("Bytes Sent: %ld\n", iResult);
 
 	////////////////////////////////////////////////////////////////////////////////
 	//    Esperar ACK
@@ -64,7 +43,6 @@ int Enviar(SOCKET ConnectSocket, char* sendbuf, int longitud){ // return 0 = OK
 			for (int ii = 0; ii < DEFAULT_BUFLEN; ii++){
 				auxiliar[ii] = recvbuf[ii];
 			}
-			printf("Bytes received: %d\n", iResult);
 			//deserialize:
 			ACK = deserialize(auxiliar);
 			cout << "ACK Recibido" << endl;
@@ -80,14 +58,13 @@ int Enviar(SOCKET ConnectSocket, char* sendbuf, int longitud){ // return 0 = OK
 			return 1;
 		}
 	} while (true);
-		//} while (iResult > 0);
 
 	return 0;
 }
 
 int Menu(SOCKET ConnectSocket){ 
-	int tamaño_msg, iResult, longitud, option;
-	char msg[200];
+	int tamaño_msg, iResult, longitud, option, volver;
+	char msg[155], borrar[10],follow[40];
 	char* enviar_char;
 	string enviar;
 
@@ -107,7 +84,7 @@ int Menu(SOCKET ConnectSocket){
 
 	//mensajes
 	while (true){
-		cout << "\n Introduce the desired function: \n1.Publish message \n2.List of messages published by an usser \n3.Delete one of your messages \n4.Follow or unfollow an usser \n5.list of messages of followed people: ";
+		cout << "\n Introduce the desired function: \n1.Publish message \n2.List of messages published by my usser \n3.Delete one of your messages \n4.Follow or unfollow an usser \n5.list of messages of followed people: ";
 		cin >> option;
 		if (option==1)
 		{
@@ -138,10 +115,139 @@ int Menu(SOCKET ConnectSocket){
 			break;
 		}
 		}
+		//print my timeline
+		else if(option==2)
+		{
+			while(1)
+			{
+			if(volver==1)
+			{
+				enviar = serialize("printme");
+				enviar_char = new char[enviar.length() + 1];
+				enviar_char[enviar.length() - 1] = 0;
+				for (int ii = 0; ii < enviar.length(); ii++){ enviar_char[ii] = enviar[ii]; }
+				longitud = enviar.length();
+				//enviar ID y esperar lista de mensajes dentro de la funcion con el ID del mensaje
+				Enviar(ConnectSocket, enviar_char, longitud);
+				delete[] enviar_char;
+
+				//si se quiere más se pone un 1
+				
+			}
+			else if (volver==2)
+			{
+				break;
+			}
+			else
+			{
+				cout<<" Si se desean más mesajes pulse 1, si quiere volver al menu pulse el 2";
+				cin>> volver;
+			}
+			}
+			
+		}
+		//delete a message
+		else if(option==3)
+		{
+			cout<<"which message do you want to delete?";
+			//mostrar mensajes
+			while(1)
+			{
+			if(volver==1)
+			{
+				enviar = serialize("printme");
+				enviar_char = new char[enviar.length() + 1];
+				enviar_char[enviar.length() - 1] = 0;
+				for (int ii = 0; ii < enviar.length(); ii++){ enviar_char[ii] = enviar[ii]; }
+				longitud = enviar.length();
+				//enviar ID y esperar lista de mensajes dentro de la funcion con el ID del mensaje
+				Enviar(ConnectSocket, enviar_char, longitud);
+				delete[] enviar_char;
+
+				//si se quiere más se pone un 1
+				cout<<" Si se desean más mesajes pulse 1, si quiere volver al menu pulse el 2";
+				cin>> volver;
+				
+			}
+			else if (volver==2)
+			{
+				break;
+			}
+			else
+			{
+				cout<<" Si se desean más mesajes pulse 1, si quiere volver al menu pulse el 2";
+				cin>> volver;
+			}
+			}
+			cin.getline(borrar,10);
+			//envio del numero para borrarlo
+				enviar = serialize("borrar")+serialize(borrar);
+				enviar_char = new char[enviar.length() + 1];
+				enviar_char[enviar.length() - 1] = 0;
+				for (int ii = 0; ii < enviar.length(); ii++){ enviar_char[ii] = enviar[ii]; }
+				longitud = enviar.length();
+				//enviar ID y esperar lista de mensajes dentro de la funcion con el ID del mensaje
+				Enviar(ConnectSocket, enviar_char, longitud);
+				delete[] enviar_char;
+
+		}
+		//follow or unfollow an user
+		else if(option==4)
+		{
+			//mostrar mensajes
+			while(1)
+			{
+			if(volver==1)
+			{
+				enviar = serialize("print_users");
+				enviar_char = new char[enviar.length() + 1];
+				enviar_char[enviar.length() - 1] = 0;
+				for (int ii = 0; ii < enviar.length(); ii++){ enviar_char[ii] = enviar[ii]; }
+				longitud = enviar.length();
+				//enviar ID y esperar lista de users dentro de la funcion 
+				Enviar(ConnectSocket, enviar_char, longitud);
+				delete[] enviar_char;
+
+				//si se quiere más se pone un 1
+				cout<<" Si se desean más usuarios pulse 1, si quiere volver al menu pulse el 2";
+				cin>> volver;
+				
+			}
+			else if (volver==2)
+			{
+				break;
+			}
+			else
+			{
+				cout<<" Si se desean más mesajes pulse 1, si quiere volver al menu pulse el 2";
+				cin>> volver;
+			}
+			}
+			//fataria comprobar en el servidor si el usuario ya le sigue entonces es unfollow
+			cin.getline(follow,40);
+			enviar = serialize("print_users");
+			enviar_char = new char[enviar.length() + 1];
+			enviar_char[enviar.length() - 1] = 0;
+			for (int ii = 0; ii < enviar.length(); ii++){ enviar_char[ii] = enviar[ii]; }
+			longitud = enviar.length();
+			//enviar ID y esperar lista de users dentro de la funcion 
+			Enviar(ConnectSocket, enviar_char, longitud);
+			delete[] enviar_char;
+
+		}
+		//list o messages of the people y follow
+		else if (option==5)
+		{
+			enviar = serialize("messages_follow");
+			enviar_char = new char[enviar.length() + 1];
+			enviar_char[enviar.length() - 1] = 0;
+			for (int ii = 0; ii < enviar.length(); ii++){ enviar_char[ii] = enviar[ii]; }
+			longitud = enviar.length();
+			//enviar ID y esperar lista de mensajes que sigo dentro de la funcion 
+			Enviar(ConnectSocket, enviar_char, longitud);
+			delete[] enviar_char;
+		}
 	}
-	
-
-
 	// shutdown the connection since no more data will be sent
 	printf("\nConnection closing...\n");
 	iResult = shutdown(ConnectSocket, SD_SEND);
