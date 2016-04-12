@@ -45,7 +45,8 @@ unsigned int Messages::s_last_id = 0;
 
 list<users*> g_users;
 
-
+//////////////////////
+////CAMBIAR POR PARSER
 bool EscribirLog(string DATA, string ID){ //return 1: ok
 	//bloquear y abrir archivo para escribir	
 	logFileMutex.lock();
@@ -105,14 +106,12 @@ string deserialize(const char* str){
 	return string(str + 4, len);
 }
 
-int Recibir(SOCKET ClientSocket){ //return 0 = OK
+int receive(SOCKET ClientSocket){ //return 0 = OK
 	int iResult, iSendResult;
 	char recvbuf[DEFAULT_BUFLEN];
-	char *auxiliar, *ACK_char;
+	char *temporal, *ACK_char;
 	int recvbuflen = DEFAULT_BUFLEN;
-	string ID, TAG, DATA, ACK;
-	string sep="////";//por poner algo
-	bool primeraVez = 1;
+	string user, type, data, ACK;
 
 	// Receive until the peer shuts down the connection
 	do {
@@ -121,42 +120,37 @@ int Recibir(SOCKET ClientSocket){ //return 0 = OK
 			////////////////////////////////////////////////////////////////////////////////
 			//    recibir datos y volcarlos en recvbuf
 			////////////////////////////////////////////////////////////////////////////////
-			if (primeraVez == 1){ //ID
-				primeraVez = 0;
-				auxiliar = new char[DEFAULT_BUFLEN + 1];
-				auxiliar[DEFAULT_BUFLEN] = '\0';
+				temporal = new char[DEFAULT_BUFLEN + 1];
+				temporal[DEFAULT_BUFLEN] = '\0';
 				for (int ii = 0; ii < DEFAULT_BUFLEN; ii++){
-					auxiliar[ii] = recvbuf[ii];
+					temporal[ii] = recvbuf[ii];
 				}
-				
-				//deserialize:
-				TAG = deserialize(auxiliar);
-				if (TAG.compare("END") != 0){
-						DATA = deserialize(auxiliar + 4 + TAG.length());
-						cout << "\n\nID: " << DATA;
-						ID = DATA;
-					}
-				delete[] auxiliar; 
-			}
-			else { //WRITELINE
-				auxiliar = new char[DEFAULT_BUFLEN+1];
-				auxiliar[DEFAULT_BUFLEN] = 0;
-				for (int ii = 0; ii < DEFAULT_BUFLEN; ii++){
-					auxiliar[ii] = recvbuf[ii];
+
+        size_t len = strlen(temporal);
+        char* nueva = new char[len+ 1];
+        for (int ii = 0; ii < (len+1); ii++){
+					nueva[ii] = temporal[ii];
 				}
 
 				//deserialize:
-				TAG = deserialize(auxiliar);
-				cout << "\n\nID: " << ID << endl;
-				cout << "TAG: " << TAG;
-				if (TAG.compare("END") != 0){
-					DATA = deserialize(auxiliar + 4 + TAG.length());
-					cout << "\nDATA: " << DATA;
-					EscribirLog(DATA, ID);
-				}
-				
-				delete[] auxiliar;
-			}
+				type = deserialize(temporal);
+        if(type == "1"){
+				  user = deserialize(temporal + 5);
+				  cout << "\n\nUsername: " << user;
+        }else if(type == "2"){
+				  user = deserialize(temporal + 5);
+				  cout << "\n\nUsername: " << user;
+          data = deserialize(temporal + 5 + user.length() + 4);
+          cout << data;
+        }else if(type == "4"){
+        }else if(type == "5"){
+        }else if(type == "6"){
+        }else if(type == "7"){
+        }else{
+          cout << "Error" << endl;
+          // Create error code
+        }
+				delete[] temporal; 
 
 			////////////////////////////////////////////////////////////////////////////////
 			//    Enviar ACK
@@ -202,7 +196,7 @@ int Recibir(SOCKET ClientSocket){ //return 0 = OK
 }
 
 void ThreadFunction(SOCKET ClientSocket){
-	Recibir(ClientSocket);
+	receive(ClientSocket);
 }
 
 int __cdecl main(void) {
