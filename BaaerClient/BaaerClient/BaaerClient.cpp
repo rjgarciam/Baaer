@@ -161,7 +161,7 @@ int set_user(){
 
   cout << "Introduce your username: ";
   getline(cin,username);
-  message =serialize("1") + serialize(username);
+  message =serialize("0") + serialize(username);
   isOk = prepare_send(message);
   return isOk;
 };
@@ -172,7 +172,7 @@ void new_baa(string user){
   cout << "Baa: ";
   cin.ignore();cin.clear();
   getline(cin,baa);
-  message =serialize("2") + serialize(username) + serialize(baa);
+  message =serialize("1") + serialize(username) + serialize(baa);
   prepare_send(message);
 };
 
@@ -184,7 +184,7 @@ void follow(string user){
   cout << "Username to (Un)follow: ";
   cin.ignore();cin.clear();
   getline(cin,follow);
-  message =serialize("5") + serialize(username) + serialize(follow);
+  message =serialize("4") + serialize(username) + serialize(follow);
   prepare_send(message);
 };
 void timeline(string user){};
