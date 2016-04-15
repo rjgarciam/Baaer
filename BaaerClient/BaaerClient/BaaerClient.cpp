@@ -225,15 +225,33 @@ void my_baas(string user){
   isOk = prepare_send(message);
 }
 
-void unbaa(string user){};
+bool unbaa(string user){
+  string message;
+  char *baaIdChar;
+  unsigned int baaId;
+  bool isOk;
+  cout << "Introduce the id of the Baa to be deleted: ";
+  cin.ignore();cin.clear();
+  cin >> baaId;
+  itoa (baaId,baaIdChar,10);
+  message =serialize("3") + serialize(username) + serialize(baaIdChar);
+  isOk = prepare_send(message);
+  return isOk;
+};
 
 void follow(string user){
   string message,follow;
+  bool isOk;
   cout << "Username to (Un)follow: ";
   cin.ignore();cin.clear();
   getline(cin,follow);
   message =serialize("4") + serialize(username) + serialize(follow);
-  prepare_send(message);
+  isOk = prepare_send(message);
+  if(isOk == 0){
+    cout << "You are now following " << follow << endl;
+  }else{
+    cout << "You are now unfollowing " << follow << endl;
+  }
 };
 void timeline(string user){};
 
@@ -273,7 +291,12 @@ int __cdecl main(int ac, char** av) {
     }else if(option==2){
       my_baas(username);
     }else if(option==3){
-      unbaa(username);
+      check = unbaa(username);
+      if(check == 0){
+        cout << "Baa deleted correctly";
+      }else{
+        cout << "Error: Baa not found or not enough permissions";
+      }  
     }else if(option==4){
       follow(username);
     }else if(option==5){

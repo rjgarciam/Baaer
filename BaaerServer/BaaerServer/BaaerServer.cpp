@@ -24,6 +24,7 @@ struct Users
   string username;
   bool loggedIn;
   map<unsigned int,bool> messages;
+  map<string,bool> follows;
 };
 
 //map<string,time_t> LoggedIn;
@@ -56,10 +57,28 @@ bool newBaa(Messages baaData){
 }
 
 
-void unBaa(){
+bool unBaa(string username,string baaIdChar){
+  unsigned int baaId;
+  baaId = stoi(baaIdChar);
+  if(Global_users[username].messages.find(baaId) != Global_users[username].messages.end()){
+    return 1;
+  }else{
+    Global_users[username].messages.erase(baaId);
+    Global_messages.erase(baaId);
+    return 0;
+  }
 }
 
-void Follow(){
+bool Follow(string username,string follow){ // 0 = Insert; 1 = Erase
+  if(Global_users[username].follows.find(follow) != Global_users[username].follows.end()){
+    map<string,bool>::iterator itFollow;
+    itFollow = Global_users[username].follows.find(follow);
+    Global_users[username].follows.erase(itFollow);
+    return 1;
+  }else{
+    Global_users[username].follows.insert(pair<string,bool>(follow,0));
+    return 0;
+  }
 }
 
 void TimeBaas(){
@@ -79,28 +98,6 @@ string deserialize(const char* str){
 	return string(str + 4, len);
 }
 
-//////////////////////
-////CAMBIAR POR PARSER
-bool EscribirLog(string DATA, string ID){ //return 1: ok
-	//bloquear y abrir archivo para escribir	
-	logFileMutex.lock();
-	logFile.open("log.txt", std::ofstream::out | std::ofstream::app);
-	//formato
-	SYSTEMTIME st, lt;
-	GetSystemTime(&st);
-	time;
-	time_t t = time(0);
-	struct tm * now = localtime(&t);
-	logFile << "[" << ID << "] " << "(" << (now->tm_year + 1900) << '-' << (now->tm_mon + 1) << '-' << now->tm_mday << " "
-		<< (now->tm_hour) << ':' << (now->tm_min) << ':' << now->tm_sec << "." << st.wMilliseconds << ") " << DATA << endl;
-	//cerrar archivo
-	logFile.flush();
-	logFile.close();
-	logFileMutex.unlock();
-	
-	return 1;
-}
-//faltaria una funcion para leer dicho archivo
 //funcion para imprimir el timeline cambiar los cout por contenido a enviar y asi enviamos eso
 int enviar(const string& mensaje)
 {
@@ -167,37 +164,45 @@ int receive(SOCKET ClientSocket){ //return 0 = OK
 		//deserialize:
 		type = deserialize(temporal);
         if(type == "0"){
-			//user and time of conection
-			user = deserialize(temporal + 5);
-			cout << "\n\nUsername: " << user;
-			doneInt = addLogged(user);
-			doneStr = to_string(doneInt);
+			    //LogIn a user
+			    user = deserialize(temporal + 5);
+			    cout << "\n\nUsername: " << user;
+			    doneInt = addLogged(user);
+			    doneStr = to_string(doneInt);
         }else if(type == "1"){
-			tempMessage.user_name = deserialize(temporal + 5);
-			cout << "\n\nUsername: " << tempMessage.user_name << endl;
-			tempMessage.content = deserialize(temporal + 5 + tempMessage.user_name.length() + 4);
-			tempMessage.id = last_id; ++last_id;
-			tempMessage.timestamp = time(0);
-			doneInt = newBaa(tempMessage);
-			doneStr = to_string(doneInt);
+          //Send new Baa
+          tempMessage.user_name = deserialize(temporal + 5);
+          cout << "\n\nUsername: " << tempMessage.user_name << endl;
+          tempMessage.content = deserialize(temporal + 5 + tempMessage.user_name.length() + 4);
+          tempMessage.id = last_id; ++last_id;
+          tempMessage.timestamp = time(0);
+          doneInt = newBaa(tempMessage);
+          doneStr = to_string(doneInt);
         }else if(type == "2"){
 			//My baas
 			user = deserialize(temporal + 5);
 			msg=print_timeline(user);     
 			//si queremos más metemos un contador de 10 y opcion para meter más
-		}else if(type == "3"){
-			//Unbaa
-				 
+        }else if(type == "3"){
+			    //Unbaa
+		      user = deserialize(temporal + 5);
+		      cout << "\n\nUsername: " << user;
+          data = deserialize(temporal + 5 + user.length() + 4);
+          cout << data;
+          doneInt = unBaa(user,data);
+          doneStr = to_string(doneInt);
         }else if(type == "4"){
-			//Follow/Unfollow an usser
-			user = deserialize(temporal + 5);
-			cout << "\n\nUsername: " << user;
-            data = deserialize(temporal + 5 + user.length() + 4);
-            cout << data;
+			    //Follow/Unfollow an usser
+		      user = deserialize(temporal + 5);
+		      cout << "\n\nUsername: " << user;
+          data = deserialize(temporal + 5 + user.length() + 4);
+          cout << data;
+          doneInt = Follow(user,data);
+          doneStr = to_string(doneInt);
         }else if(type == "5"){
-			//Baas timeline
+			    //Baas timeline
         }else if(type == "6"){
-			//Exit
+			    //Exit
         }else{
           cout << "Error" << endl;
           // Create error code
