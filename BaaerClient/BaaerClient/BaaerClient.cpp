@@ -50,17 +50,35 @@ int send_msg(SOCKET ConnectSocket, char* sendbuf, int longitud){ // return 0 = O
 				auxiliar[ii] = recvbuf[ii];
 			}
 			//deserialize:
+			int len=0;
 			ACK = deserialize(auxiliar);
+			len=ACK.length()+4;
+			if(ACK.compare("timeline")==0)
+			{
+			ACK = deserialize(auxiliar +len);
+			int number=stoi(ACK);
+				for(int i=0;i<number;i++)
+				{
+					len=len+ ACK.length()+4;
+					ACK = deserialize(auxiliar +len );
+					cout << ACK;
+				}
+				break;
+			}
+			else
+			{
 			cout << "ACK Recibido" << endl;
-      cout << ACK;
-      ACK = deserialize(auxiliar + ACK.length() + 4);
-      cout << ACK;
+			cout << ACK;
+			ACK = deserialize(auxiliar + ACK.length() + 4);
+			cout << ACK;
 			if (ACK.compare("0") == 0){ // 0 Ok, 1 error
 				ServerOk = 0; // petition processed correctly
         break;
       }else{
         return 1;
       }
+			}
+			
 			delete[] auxiliar;
 		}
 		else if (iResult < 0) {
@@ -161,6 +179,20 @@ int prepare_send(string msg){
   return isOk;
 }
 
+SOCKET send_conection(string msg)
+{
+  SOCKET ConnectSocket;
+  char* send_char;
+  int isOk;
+
+  send_char = new char[msg.length() + 1];
+	send_char[msg.length() - 1] = 0;
+	for (int ii = 0; ii < msg.length(); ii++){ send_char[ii] = msg[ii]; }
+
+  ConnectSocket = connect();
+  isOk = send_msg(ConnectSocket, send_char, msg.length());
+  return ConnectSocket;
+}
 // Function for setting up an user
 bool set_user(){
   string message;
@@ -185,7 +217,14 @@ bool new_baa(string user){
   return isOk;
 };
 
-void my_baas(string user){};
+void my_baas(string user){
+  string message;
+  bool isOk;
+  int iResult;
+  message =serialize("2") + serialize(username);
+  isOk = prepare_send(message);
+}
+
 void unbaa(string user){};
 
 void follow(string user){

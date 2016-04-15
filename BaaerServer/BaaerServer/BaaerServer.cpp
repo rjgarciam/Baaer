@@ -55,8 +55,6 @@ bool newBaa(Messages baaData){
   return 0;
 }
 
-void myBaa(){
-}
 
 void unBaa(){
 }
@@ -70,7 +68,16 @@ void TimeBaas(){
 //vector de threads definicion, para hacer algo meter
 
 vector <thread> threads;
+string serialize(const string& str){
+	int len = str.length();
+	const string strlen((char*)&len, 4);
+	return strlen + str;
+}
 
+string deserialize(const char* str){
+	const int len = *(const int*)(str);
+	return string(str + 4, len);
+}
 
 //////////////////////
 ////CAMBIAR POR PARSER
@@ -95,55 +102,47 @@ bool EscribirLog(string DATA, string ID){ //return 1: ok
 }
 //faltaria una funcion para leer dicho archivo
 //funcion para imprimir el timeline cambiar los cout por contenido a enviar y asi enviamos eso
-
+int enviar(const string& mensaje)
+{
+	int iResult, longitud;
+	char* send_char;
+	send_char = new char[mensaje.length() + 1];
+	longitud=mensaje.length();
+	for (int ii = 0; ii < mensaje.length(); ii++){ send_char[ii] = mensaje[ii]; }
+		iResult = send(ClientSocket, send_char, longitud, 0);
+		delete[] send_char;
+		return iResult;
+}
 
 //global messages[ident].
-int print_timeline(const string& user_name, bool show_id)
+string print_timeline(const string& user_name)
 {
   int count = 0;
-
+  string msg;
+  char *cont=new char;
   cout << endl << "----------------" << endl;
-  if (user_name.empty()) { // all messages, no filter
-    for (int i=Global_messages.size()-1; i ==0 ; --i) {
-      if (show_id) { // print ID of message
-        cout << Global_messages[i].id << " ";
-      }
-      cout << "[@" << Global_messages[i].user_name << "]: " << Global_messages[i].content << endl;
-    }
-    count = Global_messages.size();
-  } else { // specific user
+  
     for (int i=Global_messages.size()-1; i ==0 ; --i) {
       if (Global_messages[i].user_name == user_name) {
-        if (show_id) { // print ID of message
-          cout << Global_messages[i].id << " ";
-        }
-        cout << "[@" << user_name << "]: " << Global_messages[i].content << endl;
-        ++count;
-      }
-    }
-  }
+         msg=msg+serialize( Global_messages[i].content );
+		 ++count;
+	  }
+	}
+	itoa(count,cont,10);
+	msg=serialize(cont)+msg;
   cout << "----------------" << endl;
 
-  return count;
+  return msg;
 }
 
-string serialize(const string& str){
-	int len = str.length();
-	const string strlen((char*)&len, 4);
-	return strlen + str;
-}
 
-string deserialize(const char* str){
-	const int len = *(const int*)(str);
-	return string(str + 4, len);
-}
 
 int receive(SOCKET ClientSocket){ //return 0 = OK
 	int iResult, iSendResult, doneInt;
 	char recvbuf[DEFAULT_BUFLEN];
 	char *temporal, *ACK_char;
 	int recvbuflen = DEFAULT_BUFLEN;
-	string user, type, data, ACK, doneStr;
+	string user, type, data, ACK, doneStr,msg;
     Messages tempMessage;
 
 	// Receive until the peer shuts down the connection
@@ -183,7 +182,10 @@ int receive(SOCKET ClientSocket){ //return 0 = OK
 			doneStr = to_string(doneInt);
         }else if(type == "2"){
 			//My baas
-        }else if(type == "3"){
+			user = deserialize(temporal + 5);
+			msg=print_timeline(user);     
+			//si queremos más metemos un contador de 10 y opcion para meter más
+		}else if(type == "3"){
 			//Unbaa
 				 
         }else if(type == "4"){
@@ -206,14 +208,15 @@ int receive(SOCKET ClientSocket){ //return 0 = OK
 			//    Enviar ACK
 			////////////////////////////////////////////////////////////////////////////////
 			// Send an initial buffer: sendbuf contiene la frase que mandas
+			if (type=="2")
+			{
+				ACK =serialize("timeline")+msg;
+			}
+			else
+			{
 			ACK = serialize("ACK") + serialize(doneStr);
-			ACK_char = new char[ACK.length() + 1];
-			ACK_char[ACK.length() -1] = 0;
-			for (int ii = 0; ii < ACK.length(); ii++){ ACK_char[ii] = ACK[ii]; }
-			int longitud = ACK.length();
-
-			iResult = send(ClientSocket, ACK_char, longitud, 0);
-			delete[] ACK_char;
+			}
+			iResult=enviar(ACK);
 			cout << "\nACK enviado!";
 			if (iResult == SOCKET_ERROR) {
 				printf("send failed with error: %d\n", WSAGetLastError());
