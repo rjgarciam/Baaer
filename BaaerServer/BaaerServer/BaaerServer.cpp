@@ -37,6 +37,11 @@ map<string,Users> Global_users;
 
 map<string,time_t>::iterator itLogged = LoggedIn.begin();
 
+//vector de threads definicion, para hacer algo meter
+
+vector <thread> threads;
+
+
 //////////////////////
 ////CAMBIAR POR PARSER
 bool EscribirLog(string DATA, string ID){ //return 1: ok
@@ -288,8 +293,8 @@ int __cdecl main(void) {
     /*
       crear vector de threads, anadir "thread *t = new thread(f)"
     */
-		thread t(ThreadFunction, ClientSocket);
-		t.detach();
+		threads.push_back(thread(ThreadFunction, ClientSocket));
+		threads[threads.size()-1].detach();
 	}
 	
 	// cleanup
