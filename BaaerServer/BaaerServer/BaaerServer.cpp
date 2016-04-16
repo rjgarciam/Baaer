@@ -21,7 +21,7 @@ struct Messages {
 
 struct Users
 {
-	string username;
+  string username;
   bool loggedIn;
   map<unsigned int,bool> messages;
 };
@@ -66,6 +66,12 @@ void Follow(){
 
 void TimeBaas(){
 }
+
+//vector de threads definicion, para hacer algo meter
+
+vector <thread> threads;
+
+
 //////////////////////
 ////CAMBIAR POR PARSER
 bool EscribirLog(string DATA, string ID){ //return 1: ok
@@ -87,28 +93,31 @@ bool EscribirLog(string DATA, string ID){ //return 1: ok
 	
 	return 1;
 }
+//faltaria una funcion para leer dicho archivo
 //funcion para imprimir el timeline cambiar los cout por contenido a enviar y asi enviamos eso
-/*
+
+
+//global messages[ident].
 int print_timeline(const string& user_name, bool show_id)
 {
   int count = 0;
 
   cout << endl << "----------------" << endl;
   if (user_name.empty()) { // all messages, no filter
-    for (auto it = g_messages.begin(); it != g_messages.end(); ++it) {
+    for (int i=Global_messages.size()-1; i ==0 ; --i) {
       if (show_id) { // print ID of message
-        cout << (*it)->id << " ";
+        cout << Global_messages[i].id << " ";
       }
-      cout << "[@" << (*it)->user_name << "]: " << (*it)->content << endl;
+      cout << "[@" << Global_messages[i].user_name << "]: " << Global_messages[i].content << endl;
     }
-    count = g_messages.size();
+    count = Global_messages.size();
   } else { // specific user
-    for (auto it = g_messages.begin(); it != g_messages.end(); ++it) {
-      if ((*it)->user_name == user_name) {
+    for (int i=Global_messages.size()-1; i ==0 ; --i) {
+      if (Global_messages[i].user_name == user_name) {
         if (show_id) { // print ID of message
-          cout << (*it)->id << " ";
+          cout << Global_messages[i].id << " ";
         }
-        cout << "[@" << user_name << "]: " << (*it)->content << endl;
+        cout << "[@" << user_name << "]: " << Global_messages[i].content << endl;
         ++count;
       }
     }
@@ -117,7 +126,7 @@ int print_timeline(const string& user_name, bool show_id)
 
   return count;
 }
-*/
+
 string serialize(const string& str){
 	int len = str.length();
 	const string strlen((char*)&len, 4);
@@ -135,7 +144,7 @@ int receive(SOCKET ClientSocket){ //return 0 = OK
 	char *temporal, *ACK_char;
 	int recvbuflen = DEFAULT_BUFLEN;
 	string user, type, data, ACK, doneStr;
-  Messages tempMessage;
+    Messages tempMessage;
 
 	// Receive until the peer shuts down the connection
 	do {
@@ -153,33 +162,40 @@ int receive(SOCKET ClientSocket){ //return 0 = OK
         size_t len = strlen(temporal);
         char* nueva = new char[len+ 1];
         for (int ii = 0; ii < (len+1); ii++){
-					nueva[ii] = temporal[ii];
-				}
+			nueva[ii] = temporal[ii];
+		}
 
-				//deserialize:
-				type = deserialize(temporal);
+		//deserialize:
+		type = deserialize(temporal);
         if(type == "0"){
-				  user = deserialize(temporal + 5);
-				  cout << "\n\nUsername: " << user;
-          doneInt = addLogged(user);
-          doneStr = to_string(doneInt);
+			//user and time of conection
+			user = deserialize(temporal + 5);
+			cout << "\n\nUsername: " << user;
+			doneInt = addLogged(user);
+			doneStr = to_string(doneInt);
         }else if(type == "1"){
-          tempMessage.user_name = deserialize(temporal + 5);
-				  cout << "\n\nUsername: " << tempMessage.user_name << endl;
-          tempMessage.content = deserialize(temporal + 5 + tempMessage.user_name.length() + 4);
-          tempMessage.id = last_id; ++last_id;
-          tempMessage.timestamp = time(0);
-          doneInt = newBaa(tempMessage);
-          doneStr = to_string(doneInt);
+			tempMessage.user_name = deserialize(temporal + 5);
+			cout << "\n\nUsername: " << tempMessage.user_name << endl;
+			tempMessage.content = deserialize(temporal + 5 + tempMessage.user_name.length() + 4);
+			tempMessage.id = last_id; ++last_id;
+			tempMessage.timestamp = time(0);
+			doneInt = newBaa(tempMessage);
+			doneStr = to_string(doneInt);
         }else if(type == "2"){
+			//My baas
         }else if(type == "3"){
-				  user = deserialize(temporal + 5);
-				  cout << "\n\nUsername: " << user;
-          data = deserialize(temporal + 5 + user.length() + 4);
-          cout << data;
+			//Unbaa
+				 
         }else if(type == "4"){
+			//Follow/Unfollow an usser
+			user = deserialize(temporal + 5);
+			cout << "\n\nUsername: " << user;
+            data = deserialize(temporal + 5 + user.length() + 4);
+            cout << data;
         }else if(type == "5"){
+			//Baas timeline
         }else if(type == "6"){
+			//Exit
         }else{
           cout << "Error" << endl;
           // Create error code
@@ -322,10 +338,11 @@ int __cdecl main(void) {
 		}
 		printf("\n\nAccepted!\n");
     /*
-      crear vector de threads, anadir "thread *t = new thread(f)"
+     añadimos un nuevo thread si hay un nuevo client socket,
     */
-		thread t(ThreadFunction, ClientSocket);
-		t.detach();
+		threads.push_back(thread(ThreadFunction, ClientSocket));
+		//el detach es para que los threads puedan correr en paralelo, siendo estos los que hacen la verdadera paralezación de codigo.
+		threads[threads.size()-1].detach();
 	}
 	
 	// cleanup
