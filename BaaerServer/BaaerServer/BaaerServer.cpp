@@ -22,6 +22,7 @@ struct Users
   bool loggedIn;
   map<unsigned int,bool> messages;
   map<string,bool> follows;
+  int following;
 };
 
 //map<string,time_t> LoggedIn;
@@ -71,12 +72,15 @@ bool Follow(string username,string follow){ // 0 = Insert; 1 = Erase
     map<string,bool>::iterator itFollow;
     itFollow = Global_users[username].follows.find(follow);
     Global_users[username].follows.erase(itFollow);
+	Global_users[username].following--;
     return 1;
   }else{
     Global_users[username].follows.insert(pair<string,bool>(follow,0));
+	Global_users[username].following++;
     return 0;
   }
 }
+
 
 
 //vector de threads definicion, para hacer algo meter
@@ -92,6 +96,8 @@ string deserialize(const char* str){
 	const int len = *(const int*)(str);
 	return string(str + 4, len);
 }
+
+
 
 //funcion para imprimir el timeline cambiar los cout por contenido a enviar y asi enviamos eso
 int enviar(const string& mensaje)
@@ -112,11 +118,15 @@ string print_timeline(const string& user_name)
   int count = 0;
   string msg;
   char *cont=new char;
+   char* indent= new char;
+  int length=Global_messages.size();
   cout << endl << "----------------" << endl;
   
-    for (int i=Global_messages.size()-1; i ==0 ; --i) {
+    for (int i=length-1; i >=0 ; --i) {
       if (Global_messages[i].user_name == user_name) {
-         msg=msg+serialize( Global_messages[i].content );
+		 itoa(Global_messages[i].id,indent,10);
+		  string iden=string(indent);
+		  msg=msg+serialize(indent )+serialize( Global_messages[i].content );
 		 ++count;
 	  }
 	}
@@ -127,6 +137,33 @@ string print_timeline(const string& user_name)
   return msg;
 }
 
+string timeline(const string& username)
+{
+  int count = 0;
+  string msg, folo;
+  char *cont=new char;
+  char* indent= new char;
+  int length=Global_messages.size();
+  cout << endl << "----------------" << endl;
+    for (int i=length-1; i >=0 ; --i) {
+		{
+			folo=Global_messages[i].user_name;
+			msg=Global_users[username].follows[folo];
+			if (Global_users[username].follows[folo])
+			{
+				itoa(Global_messages[i].id,indent,10);
+				string iden=string(indent);
+				msg=msg+serialize(indent )+serialize( Global_messages[i].content );
+				++count;
+			}
+	  }
+	}
+	itoa(count,cont,10);
+	msg=serialize(cont)+msg;
+  cout << "----------------" << endl;
+
+  return msg;
+}
 
 
 int receive(SOCKET ClientSocket){ //return 0 = OK
@@ -180,22 +217,25 @@ int receive(SOCKET ClientSocket){ //return 0 = OK
 			//si queremos más metemos un contador de 10 y opcion para meter más
         }else if(type == "3"){
 			    //Unbaa
-		      user = deserialize(temporal + 5);
-		      cout << "\n\nUsername: " << user;
+		  user = deserialize(temporal + 5);
+		  cout << "\n\nUsername: " << user;
           data = deserialize(temporal + 5 + user.length() + 4);
           cout << data;
           doneInt = unBaa(user,data);
           doneStr = to_string(doneInt);
         }else if(type == "4"){
 			    //Follow/Unfollow an usser
-		      user = deserialize(temporal + 5);
-		      cout << "\n\nUsername: " << user;
-          data = deserialize(temporal + 5 + user.length() + 4);
-          cout << data;
-          doneInt = Follow(user,data);
-          doneStr = to_string(doneInt);
+		    user = deserialize(temporal + 5);
+		    cout << "\n\nUsername: " << user;
+			data = deserialize(temporal + 5 + user.length() + 4);
+			cout << data;
+			doneInt = Follow(user,data);
+			doneStr = to_string(doneInt);
         }else if(type == "5"){
 			    //Baas timeline
+			user = deserialize(temporal + 5);
+		    cout << "\n\nUsername: " << user;
+			msg=timeline(user);
         }else if(type == "6"){
 			    //Exit
         }else{

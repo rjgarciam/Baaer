@@ -61,7 +61,10 @@ int send_msg(SOCKET ConnectSocket, char* sendbuf, int longitud){ // return 0 = O
 				{
 					len=len+ ACK.length()+4;
 					ACK = deserialize(auxiliar +len );
-					cout << ACK;
+					cout << ACK<<". ";
+					len=len+ ACK.length()+4;
+					ACK = deserialize(auxiliar +len );
+					cout << ACK<<endl;
 				}
 				break;
 			}
@@ -230,6 +233,8 @@ bool unbaa(string user){
   char *baaIdChar = new char;
   unsigned int baaId;
   bool isOk;
+  cout<<"This is your timeline"<<endl;
+  my_baas(user);
   cout << "Introduce the id of the Baa to be deleted: ";
   cin.ignore();cin.clear();
   cin >> baaId;
@@ -253,7 +258,14 @@ void follow(string user){
     cout << "You are now unfollowing " << follow << endl;
   }
 };
-void timeline(string user){};
+void timeline(string user)
+{
+  string message;
+  bool isOk;
+  int iResult;
+  message =serialize("5") + serialize(username);
+  isOk = prepare_send(message);
+}
 
 int __cdecl main(int ac, char** av) {
   // Copy ac and av to the global variable
