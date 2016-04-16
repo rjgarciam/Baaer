@@ -1,49 +1,41 @@
 #include "stdafx.h"
 
+SOCKET ClientSocket = INVALID_SOCKET;
+SOCKET ListenSocket = INVALID_SOCKET;
 
 mutex logFileMutex;
 ofstream logFile;
+
+unsigned int last_id;
 //definiciones de donde se guardan las cosas solo falta que ademas de llegar se guarden las cosas en donde tienten que estar
 /** Class *****************************************************/
 /*
  * This struct will contain all the information regarding a message
  */
 struct Messages {
-  static unsigned int s_last_id; // keep track of IDs to assign it automatically
   unsigned int id;
   string user_name;
   string content;
-
-  int year;
-  int month;
-  int day;
-  
-  int hour;
-  int min;
-  int seg;
+  time_t timestamp;
 
   Messages(const string& a_user_name, const string& a_content) :
-    user_name(a_user_name), content(a_content), id(++s_last_id)
+    user_name(a_user_name), content(a_content), id(++last_id)
   {
+    timestamp = time(0);
   }
 };
-list<Messages*> g_messages;
-map<unsigned int, list<Messages*>::iterator> g_messages_by_index;
-struct users
-{
-	string ID;
-	struct mensajes
-	{
-		int id_mensaje;
-	};
-	struct persona
-	{
-		string identifier;
-	};
-};
-unsigned int Messages::s_last_id = 0;
 
-list<users*> g_users;
+struct Users
+{
+	string username;
+  map<unsigned int, list<Messages*>::iterator> messages;
+};
+
+map<string,time_t> LoggedIn;
+map<unsigned int, Messages> Global_messages;
+map<string,Users> Global_users;
+
+map<string,time_t>::iterator itLogged = LoggedIn.begin();
 
 //////////////////////
 ////CAMBIAR POR PARSER
@@ -134,10 +126,17 @@ int receive(SOCKET ClientSocket){ //return 0 = OK
 
 				//deserialize:
 				type = deserialize(temporal);
-        if(type == "1"){
+        if(type == "0"){
 				  user = deserialize(temporal + 5);
 				  cout << "\n\nUsername: " << user;
+          LoggedIn.insert (itLogged, pair<string,time_t>(user,time(0)));
+        }else if(type == "1"){
+				  user = deserialize(temporal + 5);
+				  cout << "\n\nUsername: " << user << endl;
+          data = deserialize(temporal + 5 + user.length() + 4);
+          cout << data;
         }else if(type == "2"){
+        }else if(type == "3"){
 				  user = deserialize(temporal + 5);
 				  cout << "\n\nUsername: " << user;
           data = deserialize(temporal + 5 + user.length() + 4);
@@ -145,7 +144,6 @@ int receive(SOCKET ClientSocket){ //return 0 = OK
         }else if(type == "4"){
         }else if(type == "5"){
         }else if(type == "6"){
-        }else if(type == "7"){
         }else{
           cout << "Error" << endl;
           // Create error code
@@ -191,20 +189,15 @@ int receive(SOCKET ClientSocket){ //return 0 = OK
 		WSACleanup();
 		return 1;
 	}
-
+  closesocket(ClientSocket);
 	return 0;
 }
 
-void ThreadFunction(SOCKET ClientSocket){
-	receive(ClientSocket);
-}
-
-int __cdecl main(void) {
+int set_up_server(int error){
 	WSADATA wsaData;
 	int iResult;
 
-	SOCKET ListenSocket = INVALID_SOCKET;
-	SOCKET ClientSocket = INVALID_SOCKET;
+  error = 0;
 
 	struct addrinfo* result = NULL;
 	struct addrinfo hints;
@@ -213,7 +206,7 @@ int __cdecl main(void) {
 	iResult = WSAStartup(MAKEWORD(2, 2), &wsaData);
 	if (iResult != 0) {
 		printf("WSAStartup failed with error: %d\n", iResult);
-		return 1;
+		error = 1;
 	}
 
 	ZeroMemory(&hints, sizeof(hints));
@@ -227,7 +220,7 @@ int __cdecl main(void) {
 	if (iResult != 0) {
 		printf("getaddrinfo failed with error: %d\n", iResult);
 		WSACleanup();
-		return 1; 
+		error = 1;
 	}
 
 	// Create a SOCKET for connecting to server
@@ -236,7 +229,7 @@ int __cdecl main(void) {
 		printf("socket failed with error: %ld\n", WSAGetLastError());
 		freeaddrinfo(result);
 		WSACleanup();
-		return 1;
+		error = 1;
 	}
 
 	// Setup the TCP listening socket
@@ -246,7 +239,7 @@ int __cdecl main(void) {
 		freeaddrinfo(result);
 		closesocket(ListenSocket);
 		WSACleanup();
-		return 1;
+		error = 1;
 	}
 
 	freeaddrinfo(result);
@@ -256,9 +249,24 @@ int __cdecl main(void) {
 		printf("listen failed with error: %d\n", WSAGetLastError());
 		closesocket(ListenSocket);
 		WSACleanup();
-		return 1;
+		error = 1;
 	}
-	printf("Waiting for connection...\n");
+  return error;
+}
+
+void ThreadFunction(SOCKET ClientSocket){
+	receive(ClientSocket);
+}
+
+int __cdecl main(void) {
+
+  int result = 1;
+
+  while(result!=0){
+    result = set_up_server(result);
+  }
+  printf("Waiting for connection...\n");
+
 	///////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 	//vaciar log
 	logFileMutex.lock();
@@ -277,17 +285,15 @@ int __cdecl main(void) {
 			return 1;
 		}
 		printf("\n\nAccepted!\n");
-
+    /*
+      crear vector de threads, anadir "thread *t = new thread(f)"
+    */
 		thread t(ThreadFunction, ClientSocket);
 		t.detach();
 	}
 	
-
-	// No longer need server socket, we have the CLentSocket
-	closesocket(ListenSocket);
-
 	// cleanup
-	closesocket(ClientSocket);
+  closesocket(ListenSocket);
 	WSACleanup();
 	return 0;
 }
