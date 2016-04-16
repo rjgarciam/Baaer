@@ -6,7 +6,7 @@ SOCKET ListenSocket = INVALID_SOCKET;
 mutex logFileMutex;
 ofstream logFile;
 
-unsigned int last_id;
+unsigned int last_id = 0;
 //definiciones de donde se guardan las cosas solo falta que ademas de llegar se guarden las cosas en donde tienten que estar
 /** Class *****************************************************/
 /*
@@ -17,26 +17,55 @@ struct Messages {
   string user_name;
   string content;
   time_t timestamp;
-
-  Messages(const string& a_user_name, const string& a_content) :
-    user_name(a_user_name), content(a_content), id(++last_id)
-  {
-    timestamp = time(0);
-  }
 };
 
 struct Users
 {
 	string username;
-  map<unsigned int, list<Messages*>::iterator> messages;
+  bool loggedIn;
+  map<unsigned int,bool> messages;
 };
 
-map<string,time_t> LoggedIn;
+//map<string,time_t> LoggedIn;
 map<unsigned int, Messages> Global_messages;
 map<string,Users> Global_users;
 
-map<string,time_t>::iterator itLogged = LoggedIn.begin();
+//map<string,time_t>::iterator itLogged = LoggedIn.begin();
 
+bool addLogged(string username){ // 0 OK, 1 error
+  if(Global_users.find(username) != Global_users.end()){
+    if(Global_users[username].loggedIn = 0){
+      Global_users[username].loggedIn = 1;
+      return 0;
+    }else{
+      return 1;
+    }
+  }else{
+    Users tempUser;
+    tempUser.username = username;
+    tempUser.loggedIn = 1;
+    Global_users.insert(pair<string,Users>(username,tempUser));
+    return 0;
+  }
+}
+
+bool newBaa(Messages baaData){
+  Global_messages.insert(pair<int,Messages>(baaData.id,baaData));
+  Global_users[baaData.user_name].messages.insert(pair<unsigned int, bool>(baaData.id,0));
+  return 0;
+}
+
+void myBaa(){
+}
+
+void unBaa(){
+}
+
+void Follow(){
+}
+
+void TimeBaas(){
+}
 //////////////////////
 ////CAMBIAR POR PARSER
 bool EscribirLog(string DATA, string ID){ //return 1: ok
@@ -59,6 +88,7 @@ bool EscribirLog(string DATA, string ID){ //return 1: ok
 	return 1;
 }
 //funcion para imprimir el timeline cambiar los cout por contenido a enviar y asi enviamos eso
+/*
 int print_timeline(const string& user_name, bool show_id)
 {
   int count = 0;
@@ -87,6 +117,7 @@ int print_timeline(const string& user_name, bool show_id)
 
   return count;
 }
+*/
 string serialize(const string& str){
 	int len = str.length();
 	const string strlen((char*)&len, 4);
@@ -99,11 +130,12 @@ string deserialize(const char* str){
 }
 
 int receive(SOCKET ClientSocket){ //return 0 = OK
-	int iResult, iSendResult;
+	int iResult, iSendResult, doneInt;
 	char recvbuf[DEFAULT_BUFLEN];
 	char *temporal, *ACK_char;
 	int recvbuflen = DEFAULT_BUFLEN;
-	string user, type, data, ACK;
+	string user, type, data, ACK, doneStr;
+  Messages tempMessage;
 
 	// Receive until the peer shuts down the connection
 	do {
@@ -129,12 +161,16 @@ int receive(SOCKET ClientSocket){ //return 0 = OK
         if(type == "0"){
 				  user = deserialize(temporal + 5);
 				  cout << "\n\nUsername: " << user;
-          LoggedIn.insert (itLogged, pair<string,time_t>(user,time(0)));
+          doneInt = addLogged(user);
+          doneStr = to_string(doneInt);
         }else if(type == "1"){
-				  user = deserialize(temporal + 5);
-				  cout << "\n\nUsername: " << user << endl;
-          data = deserialize(temporal + 5 + user.length() + 4);
-          cout << data;
+          tempMessage.user_name = deserialize(temporal + 5);
+				  cout << "\n\nUsername: " << tempMessage.user_name << endl;
+          tempMessage.content = deserialize(temporal + 5 + tempMessage.user_name.length() + 4);
+          tempMessage.id = last_id; ++last_id;
+          tempMessage.timestamp = time(0);
+          doneInt = newBaa(tempMessage);
+          doneStr = to_string(doneInt);
         }else if(type == "2"){
         }else if(type == "3"){
 				  user = deserialize(temporal + 5);
@@ -154,7 +190,7 @@ int receive(SOCKET ClientSocket){ //return 0 = OK
 			//    Enviar ACK
 			////////////////////////////////////////////////////////////////////////////////
 			// Send an initial buffer: sendbuf contiene la frase que mandas
-			ACK = serialize("ACK");
+			ACK = serialize("ACK") + serialize(doneStr);
 			ACK_char = new char[ACK.length() + 1];
 			ACK_char[ACK.length() -1] = 0;
 			for (int ii = 0; ii < ACK.length(); ii++){ ACK_char[ii] = ACK[ii]; }

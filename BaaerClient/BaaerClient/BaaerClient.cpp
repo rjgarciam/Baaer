@@ -23,6 +23,7 @@ int send_msg(SOCKET ConnectSocket, char* sendbuf, int longitud){ // return 0 = O
 	char recvbuf[DEFAULT_BUFLEN];
 	char* auxiliar;
 	string ACK;
+  bool ServerOk = 1;
 
 	////////////////////////////////////////////////////////////////////////////////
 	//    Enviar informacion recibida en sendbuf
@@ -51,9 +52,15 @@ int send_msg(SOCKET ConnectSocket, char* sendbuf, int longitud){ // return 0 = O
 			//deserialize:
 			ACK = deserialize(auxiliar);
 			cout << "ACK Recibido" << endl;
-			if (ACK.compare("ACK") == 0){
-				break;
-			}
+      cout << ACK;
+      ACK = deserialize(auxiliar + ACK.length() + 4);
+      cout << ACK;
+			if (ACK.compare("0") == 0){ // 0 Ok, 1 error
+				ServerOk = 0; // petition processed correctly
+        break;
+      }else{
+        return 1;
+      }
 			delete[] auxiliar;
 		}
 		else if (iResult < 0) {
@@ -67,7 +74,7 @@ int send_msg(SOCKET ConnectSocket, char* sendbuf, int longitud){ // return 0 = O
   	// cleanup
   closesocket(ConnectSocket);
 	WSACleanup();
-	return 0;
+	return ServerOk;
 }
 
 
@@ -155,7 +162,7 @@ int prepare_send(string msg){
 }
 
 // Function for setting up an user
-int set_user(){
+bool set_user(){
   string message;
   int isOk;
 
@@ -167,13 +174,15 @@ int set_user(){
 };
 
 
-void new_baa(string user){
+bool new_baa(string user){
   string message,baa;
+  bool isOk;
   cout << "Baa: ";
   cin.ignore();cin.clear();
   getline(cin,baa);
   message =serialize("1") + serialize(username) + serialize(baa);
-  prepare_send(message);
+  isOk = prepare_send(message);
+  return isOk;
 };
 
 void my_baas(string user){};
@@ -193,7 +202,8 @@ int __cdecl main(int ac, char** av) {
   // Copy ac and av to the global variable
   argc = ac;
   argv = av;
-  int option,check;
+  int option;
+  bool check;
 
   cout << "\n*** Client ***" << endl;
 
@@ -202,6 +212,7 @@ int __cdecl main(int ac, char** av) {
     check = set_user();
     if(check==0){
       cout << "ok";
+      check = 1;
       break;
     }else{
       cout << "Error" << endl;
@@ -214,7 +225,12 @@ int __cdecl main(int ac, char** av) {
     cout << "1. Baa" << endl << "2. My Baas" << endl << "3. UnBaa" << endl << "4. Follow/Unfollow" << endl << "5. Baas timeline" << endl << "6. Exit" << endl << "*******************************************" << endl;
     cin >> option;
     if(option==1){
-      new_baa(username);
+      check = new_baa(username);
+      if(check == 0){
+        cout << "Baa sent correctly";
+      }else{
+        cout << "An error has been produced";
+      }
     }else if(option==2){
       my_baas(username);
     }else if(option==3){
