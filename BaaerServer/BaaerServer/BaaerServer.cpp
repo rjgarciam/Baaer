@@ -24,6 +24,7 @@ struct Users
   string username;
   bool loggedIn;
   map<unsigned int,bool> messages;
+  map<string,bool> follows;
 };
 
 //map<string,time_t> LoggedIn;
@@ -58,10 +59,28 @@ bool newBaa(Messages baaData){
 void myBaa(){
 }
 
-void unBaa(){
+bool unBaa(string username,string baaIdChar){
+  unsigned int baaId;
+  baaId = stoi(baaIdChar);
+  if(Global_users[username].messages.find(baaId) != Global_users[username].messages.end()){
+    return 1;
+  }else{
+    Global_users[username].messages.erase(baaId);
+    Global_messages.erase(baaId);
+    return 0;
+  }
 }
 
-void Follow(){
+bool Follow(string username,string follow){ // 0 = Insert; 1 = Erase
+  if(Global_users[username].follows.find(follow) != Global_users[username].follows.end()){
+    map<string,bool>::iterator itFollow;
+    itFollow = Global_users[username].follows.find(follow);
+    Global_users[username].follows.erase(itFollow);
+    return 1;
+  }else{
+    Global_users[username].follows.insert(pair<string,bool>(follow,0));
+    return 0;
+  }
 }
 
 void TimeBaas(){
@@ -142,12 +161,13 @@ int receive(SOCKET ClientSocket){ //return 0 = OK
 		//deserialize:
 		type = deserialize(temporal);
         if(type == "0"){
-			    //user and time of conection
+			    //LogIn a user
 			    user = deserialize(temporal + 5);
 			    cout << "\n\nUsername: " << user;
 			    doneInt = addLogged(user);
 			    doneStr = to_string(doneInt);
         }else if(type == "1"){
+          //Send new Baa
           tempMessage.user_name = deserialize(temporal + 5);
           cout << "\n\nUsername: " << tempMessage.user_name << endl;
           tempMessage.content = deserialize(temporal + 5 + tempMessage.user_name.length() + 4);
@@ -159,13 +179,20 @@ int receive(SOCKET ClientSocket){ //return 0 = OK
 			    //My baas
         }else if(type == "3"){
 			    //Unbaa
-				 
+		      user = deserialize(temporal + 5);
+		      cout << "\n\nUsername: " << user;
+          data = deserialize(temporal + 5 + user.length() + 4);
+          cout << data;
+          doneInt = unBaa(user,data);
+          doneStr = to_string(doneInt);
         }else if(type == "4"){
-			      //Follow/Unfollow an usser
-		        user = deserialize(temporal + 5);
-		        cout << "\n\nUsername: " << user;
-            data = deserialize(temporal + 5 + user.length() + 4);
-            cout << data;
+			    //Follow/Unfollow an usser
+		      user = deserialize(temporal + 5);
+		      cout << "\n\nUsername: " << user;
+          data = deserialize(temporal + 5 + user.length() + 4);
+          cout << data;
+          doneInt = Follow(user,data);
+          doneStr = to_string(doneInt);
         }else if(type == "5"){
 			    //Baas timeline
         }else if(type == "6"){
