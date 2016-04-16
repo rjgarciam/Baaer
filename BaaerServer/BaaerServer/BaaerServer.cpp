@@ -148,8 +148,8 @@ string timeline(const string& username)
     for (int i=length-1; i >=0 ; --i) {
 		{
 			folo=Global_messages[i].user_name;
-			msg=Global_users[username].follows[folo];
-			if (Global_users[username].follows[folo])
+
+			if (Global_users[username].follows.find(folo) != Global_users[username].follows.end())
 			{
 				itoa(Global_messages[i].id,indent,10);
 				string iden=string(indent);
