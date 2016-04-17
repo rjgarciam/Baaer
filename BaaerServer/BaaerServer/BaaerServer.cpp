@@ -3,9 +3,6 @@
 SOCKET ClientSocket = INVALID_SOCKET;
 SOCKET ListenSocket = INVALID_SOCKET;
 
-mutex logFileMutex;
-ofstream logFile;
-
 unsigned int last_id = 0;
 //definiciones de donde se guardan las cosas solo falta que ademas de llegar se guarden las cosas en donde tienten que estar
 /** Class *****************************************************/
@@ -81,8 +78,6 @@ bool Follow(string username,string follow){ // 0 = Insert; 1 = Erase
   }
 }
 
-void TimeBaas(){
-}
 
 //vector de threads definicion, para hacer algo meter
 
@@ -327,13 +322,6 @@ int __cdecl main(void) {
   }
   printf("Waiting for connection...\n");
 
-	///////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-	//vaciar log
-	logFileMutex.lock();
-	logFile.open("log.txt", std::ofstream::out | std::ofstream::trunc);
-	logFile.flush();
-	logFile.close();
-	logFileMutex.unlock();
 
 	while (true){
 		// Accept a client socket

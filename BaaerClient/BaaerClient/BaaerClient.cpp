@@ -227,7 +227,7 @@ void my_baas(string user){
 
 bool unbaa(string user){
   string message;
-  char *baaIdChar;
+  char *baaIdChar = new char;
   unsigned int baaId;
   bool isOk;
   cout << "Introduce the id of the Baa to be deleted: ";
