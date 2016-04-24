@@ -67,17 +67,21 @@ bool unBaa(string username,string baaIdChar){
   }
 }
 
-bool Follow(string username,string follow){ // 0 = Insert; 1 = Erase
-  if(Global_users[username].follows.find(follow) != Global_users[username].follows.end()){
-    map<string,bool>::iterator itFollow;
-    itFollow = Global_users[username].follows.find(follow);
-    Global_users[username].follows.erase(itFollow);
-	Global_users[username].following--;
-    return 1;
+int Follow(string username,string follow){ // 0 = Insert; 1 = Erase, 2 = No user with that username
+  if(Global_users.find(follow) != Global_users.end()){
+    if(Global_users[username].follows.find(follow) != Global_users[username].follows.end()){
+      map<string,bool>::iterator itFollow;
+      itFollow = Global_users[username].follows.find(follow);
+      Global_users[username].follows.erase(itFollow);
+      Global_users[username].following--;
+      return 1;
+    }else{
+      Global_users[username].follows.insert(pair<string,bool>(follow,0));
+      Global_users[username].following++;
+      return 0;
+    }
   }else{
-    Global_users[username].follows.insert(pair<string,bool>(follow,0));
-	Global_users[username].following++;
-    return 0;
+    return 2;
   }
 }
 

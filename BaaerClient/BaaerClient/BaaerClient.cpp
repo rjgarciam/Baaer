@@ -23,7 +23,7 @@ int send_msg(SOCKET ConnectSocket, char* sendbuf, int longitud){ // return 0 = O
 	char recvbuf[DEFAULT_BUFLEN];
 	char* auxiliar;
 	string ACK;
-  bool ServerOk = 1;
+  int ServerOk = 1;
 
 	////////////////////////////////////////////////////////////////////////////////
 	//    Enviar informacion recibida en sendbuf
@@ -86,6 +86,9 @@ int send_msg(SOCKET ConnectSocket, char* sendbuf, int longitud){ // return 0 = O
 			cout << ACK;
 			if (ACK.compare("0") == 0){ // 0 Ok, 1 error
 				ServerOk = 0; // petition processed correctly
+        break;
+      }else if(ACK.compare("2") == 0){
+        ServerOk = 2; // petition processed correctly
         break;
       }else{
         return 1;
@@ -256,16 +259,20 @@ bool unbaa(string user){
 
 void follow(string user){
   string message,follow;
-  bool isOk;
+  short int isOk;
   cout << "Username to (Un)follow: ";
   cin.ignore();cin.clear();
   getline(cin,follow);
   message =serialize("4") + serialize(username) + serialize(follow);
   isOk = prepare_send(message);
   if(isOk == 0){
-    cout << "You are now following " << follow << endl;
+    cout << "You are now following @" << follow << endl;
+  }else if(isOk == 1){
+    cout << "You are now unfollowing @" << follow << endl;
+  }else if(isOk == 2){
+    cout << "Sorry, user @" << follow << " doesn't exists" << endl;
   }else{
-    cout << "You are now unfollowing " << follow << endl;
+    cout << "Unexpected error, please retry" << endl;
   }
 };
 
