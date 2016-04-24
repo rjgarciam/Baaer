@@ -33,7 +33,7 @@ map<string,Users> Global_users;
 
 bool addLogged(string username){ // 0 OK, 1 error
   if(Global_users.find(username) != Global_users.end()){
-    if(Global_users[username].loggedIn = 0){
+    if(Global_users[username].loggedIn == 0){
       Global_users[username].loggedIn = 1;
       return 0;
     }else{
@@ -167,6 +167,14 @@ string timeline(const string& username)
   return msg;
 }
 
+bool log_out(string username){ // 0 OK, 1 error
+  if(Global_users.find(username) != Global_users.end()){
+      Global_users[username].loggedIn = 0;
+      return 0;
+    }else{
+      return 1;
+    }
+}
 
 int receive(SOCKET ClientSocket){ //return 0 = OK
 	int iResult, iSendResult, doneInt;
@@ -239,7 +247,9 @@ int receive(SOCKET ClientSocket){ //return 0 = OK
 		    cout << "\n\nUsername: " << user;
 			msg=timeline(user);
         }else if(type == "6"){
-			    //Exit
+          user = deserialize(temporal + 5);
+			    doneInt = log_out(user);
+          doneStr = to_string(doneInt);
         }else{
           cout << "Error" << endl;
           // Create error code

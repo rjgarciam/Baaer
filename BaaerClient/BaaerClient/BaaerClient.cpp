@@ -267,6 +267,14 @@ void timeline(string user)
   isOk = prepare_send(message);
 }
 
+bool log_out(string user){
+  string message;
+  int isOk;
+  message =serialize("6") + serialize(username);
+  isOk = prepare_send(message);
+  return isOk;
+};
+
 int __cdecl main(int ac, char** av) {
   // Copy ac and av to the global variable
   argc = ac;
@@ -314,7 +322,13 @@ int __cdecl main(int ac, char** av) {
     }else if(option==5){
       timeline(username);
     }else if(option==6){
-      break;
+      check = log_out(username);
+      if(check == 0){
+        cout << "Closing Baaer" << endl;
+        break;
+      }else{
+        cout << "Sorry, an error happened logging out, please retry" << endl;
+      }
     }else{
       cout << "Please, introduce a valid option" << endl;
     }
