@@ -56,6 +56,9 @@ int send_msg(SOCKET ConnectSocket, char* sendbuf, int longitud){ // return 0 = O
 			if(ACK.compare("mybaas")==0){
 			  ACK = deserialize(auxiliar +len);
 			  int number=stoi(ACK);
+        if(number == 0){
+          cout << "There are no Baas to display" << endl;
+        }else{
 				  for(int i=0;i<number;i++)
 				  {
 					  len=len+ ACK.length()+4;
@@ -65,10 +68,14 @@ int send_msg(SOCKET ConnectSocket, char* sendbuf, int longitud){ // return 0 = O
 					  ACK = deserialize(auxiliar +len );
 					  cout << ACK<<endl;
 				  }
+        }
 				  break;
 			}else if(ACK.compare("timeline")==0){
 			  ACK = deserialize(auxiliar + len);
 			  int number=stoi(ACK);
+        if(number == 0){
+          cout << "There are no Baas to display" << endl;
+        }else{
 				  for(int i=0;i<number;i++)
 				  {
 					  len=len+ ACK.length()+4;
@@ -77,13 +84,14 @@ int send_msg(SOCKET ConnectSocket, char* sendbuf, int longitud){ // return 0 = O
 					  len=len+ ACK.length()+4;
 					  ACK = deserialize(auxiliar +len );
 					  cout << ACK <<endl;
-				  }
+          }
+        }
 				  break;
 			}else{
-			cout << "ACK Recibido" << endl;
-			cout << ACK;
+			//cout << "ACK Recibido" << endl;
+			//cout << ACK;
 			ACK = deserialize(auxiliar + ACK.length() + 4);
-			cout << ACK;
+			//cout << ACK;
 			if (ACK.compare("0") == 0){ // 0 Ok, 1 error
 				ServerOk = 0; // petition processed correctly
         break;
@@ -306,7 +314,7 @@ int __cdecl main(int ac, char** av) {
   while(1){
     check = set_user();
     if(check==0){
-      cout << "ok";
+      //cout << "ok";
       check = 1;
       break;
     }else{

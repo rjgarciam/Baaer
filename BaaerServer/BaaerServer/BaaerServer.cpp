@@ -125,7 +125,7 @@ string print_timeline(const string& user_name)
   char *cont=new char;
    char* indent= new char;
   int length=Global_messages.size();
-  cout << endl << "----------------" << endl;
+  cout << endl << "Printing " << user_name << " timeline" << endl;
   
   for (rit=Global_messages.rbegin(); rit!=Global_messages.rend(); ++rit) {
     if (rit->second.user_name == user_name) {
@@ -137,7 +137,7 @@ string print_timeline(const string& user_name)
 	}
 	itoa(count,cont,10);
 	msg=serialize(cont)+msg;
-  cout << "----------------" << endl;
+  //cout << "----------------" << endl;
 
   return msg;
 }
@@ -150,7 +150,7 @@ string timeline(const string& username)
   char *cont=new char;
   char* indent= new char;
   int length=Global_messages.size();
-  cout << endl << "----------------" << endl;
+  cout << endl << "Printing " << username << " Baas" << endl;
     for (rit=Global_messages.rbegin(); rit!=Global_messages.rend(); ++rit) {
 		{
 			folo=rit->second.user_name;
@@ -166,7 +166,7 @@ string timeline(const string& username)
 	}
 	itoa(count,cont,10);
 	msg=serialize(cont)+msg;
-  cout << "----------------" << endl;
+  //cout << "----------------" << endl;
 
   return msg;
 }
@@ -212,13 +212,13 @@ int receive(SOCKET ClientSocket){ //return 0 = OK
         if(type == "0"){
 			    //LogIn a user
 			    user = deserialize(temporal + 5);
-			    cout << "\n\nUsername: " << user;
+			    cout << "Username: @" << user << " has logged in" << endl;
 			    doneInt = addLogged(user);
 			    doneStr = to_string(doneInt);
         }else if(type == "1"){
           //Send new Baa
           tempMessage.user_name = deserialize(temporal + 5);
-          cout << "\n\nUsername: " << tempMessage.user_name << endl;
+          cout << "Username: @" << tempMessage.user_name << " has Baaed" << endl;
           tempMessage.content = deserialize(temporal + 5 + tempMessage.user_name.length() + 4);
           tempMessage.id = last_id; ++last_id;
           tempMessage.timestamp = time(0);
@@ -232,28 +232,45 @@ int receive(SOCKET ClientSocket){ //return 0 = OK
         }else if(type == "3"){
 			    //Unbaa
 		  user = deserialize(temporal + 5);
-		  cout << "\n\nUsername: " << user;
+		  //cout << "Username: " << user << " is removing a tweet";
           data = deserialize(temporal + 5 + user.length() + 4);
-          cout << data;
+          //cout << data;
           doneInt = unBaa(user,data);
           doneStr = to_string(doneInt);
+          if(doneInt == 0){
+            cout << "User: @" << user << " has removed a tweet with ID: " << data << endl;
+          }else{
+            cout << "The user @" << user << " has received an error trying to remove a tweet with ID: " << data << endl;
+          }
         }else if(type == "4"){
 			    //Follow/Unfollow an usser
 		    user = deserialize(temporal + 5);
-		    cout << "\n\nUsername: " << user;
+		    //cout << "\n\nUsername: " << user;
 			data = deserialize(temporal + 5 + user.length() + 4);
-			cout << data;
+			//cout << data;
 			doneInt = Follow(user,data);
 			doneStr = to_string(doneInt);
+          if(doneInt == 0){
+            cout << "User: @" << user << " has started following  @" << data << endl;
+          }else if(doneInt == 1){
+            cout << "The user @" << user << " has stopped following  @" << data << endl;
+          }else{
+            cout << "The user @" << user << " has received an error trying to follow @" << data << endl;
+          }
         }else if(type == "5"){
 			    //Baas timeline
 			user = deserialize(temporal + 5);
-		    cout << "\n\nUsername: " << user;
+		    //cout << "\n\nUsername: " << user;
 			msg=timeline(user);
         }else if(type == "6"){
           user = deserialize(temporal + 5);
 			    doneInt = log_out(user);
           doneStr = to_string(doneInt);
+          if(doneInt == 0){
+            cout << "User: @" << user << " has logout"<< endl;
+          }else{
+            cout << "User @" << user << " has received an error trying to logout" << endl;
+          }
         }else{
           cout << "Error" << endl;
           // Create error code
@@ -272,7 +289,7 @@ int receive(SOCKET ClientSocket){ //return 0 = OK
 			  ACK = serialize("ACK") + serialize(doneStr);
 			}
 			iResult=enviar(ACK);
-			cout << "\nACK enviado!";
+			//cout << "\nACK enviado!";
 			if (iResult == SOCKET_ERROR) {
 				printf("send failed with error: %d\n", WSAGetLastError());
 				closesocket(ClientSocket);
@@ -281,7 +298,7 @@ int receive(SOCKET ClientSocket){ //return 0 = OK
 			}
 		}
 		else if (iResult == 0) {
-			printf("\nConnection closing...\n");
+			printf("Closing connection...\n");
 		}
 		else  {
 			printf("recv failed with error: %d\n", WSAGetLastError());
@@ -387,7 +404,7 @@ int __cdecl main(void) {
 			WSACleanup();
 			return 1;
 		}
-		printf("\n\nAccepted!\n");
+		printf("New connection accepted\n");
     /*
      añadimos un nuevo thread si hay un nuevo client socket,
     */
