@@ -59,11 +59,11 @@ bool unBaa(string username,string baaIdChar){
   unsigned int baaId;
   baaId = stoi(baaIdChar);
   if(Global_users[username].messages.find(baaId) != Global_users[username].messages.end()){
-    return 1;
-  }else{
     Global_users[username].messages.erase(baaId);
     Global_messages.erase(baaId);
     return 0;
+  }else{
+    return 1;
   }
 }
 
