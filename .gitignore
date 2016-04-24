@@ -3,10 +3,17 @@
 BaaerClient/ipch/
 BaaerClient/Debug/
 BaaerClient/BaaerClient/Debug
+BaaerClient/BaaerClient/Release
+BaaerClient/Release
+
 
 BaaerServer/ipch/
 BaaerServer/Debug/
 BaaerServer/BaaerServer/Debug
+BaaerServer/BaaerServer/Release
+BaaerServer/Release
+
 *.opensdf
 
 *.user
+

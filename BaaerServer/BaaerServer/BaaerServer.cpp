@@ -115,6 +115,7 @@ int enviar(const string& mensaje)
 //global messages[ident].
 string print_timeline(const string& user_name)
 {
+  map<unsigned int, Messages>::reverse_iterator rit;
   int count = 0;
   string msg;
   char *cont=new char;
@@ -122,12 +123,12 @@ string print_timeline(const string& user_name)
   int length=Global_messages.size();
   cout << endl << "----------------" << endl;
   
-    for (int i=length-1; i >=0 ; --i) {
-      if (Global_messages[i].user_name == user_name) {
-		 itoa(Global_messages[i].id,indent,10);
+  for (rit=Global_messages.rbegin(); rit!=Global_messages.rend(); ++rit) {
+    if (rit->second.user_name == user_name) {
+		  itoa(rit->second.id,indent,10);
 		  string iden=string(indent);
-		  msg=msg+serialize(indent )+serialize( Global_messages[i].content );
-		 ++count;
+		  msg=msg+serialize(indent )+serialize( rit->second.content );
+		  ++count;
 	  }
 	}
 	itoa(count,cont,10);
@@ -139,21 +140,22 @@ string print_timeline(const string& user_name)
 
 string timeline(const string& username)
 {
+  map<unsigned int, Messages>::reverse_iterator rit;
   int count = 0;
   string msg, folo;
   char *cont=new char;
   char* indent= new char;
   int length=Global_messages.size();
   cout << endl << "----------------" << endl;
-    for (int i=length-1; i >=0 ; --i) {
+    for (rit=Global_messages.rbegin(); rit!=Global_messages.rend(); ++rit) {
 		{
-			folo=Global_messages[i].user_name;
+			folo=rit->second.user_name;
 
 			if (Global_users[username].follows.find(folo) != Global_users[username].follows.end())
 			{
-				itoa(Global_messages[i].id,indent,10);
+				itoa(rit->second.id,indent,10);
 				string iden=string(indent);
-				msg=msg+serialize(indent )+serialize( Global_messages[i].content );
+				msg=msg+serialize(indent )+serialize(rit->second.content );
 				++count;
 			}
 	  }
