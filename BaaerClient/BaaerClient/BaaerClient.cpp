@@ -53,23 +53,33 @@ int send_msg(SOCKET ConnectSocket, char* sendbuf, int longitud){ // return 0 = O
 			int len=0;
 			ACK = deserialize(auxiliar);
 			len=ACK.length()+4;
-			if(ACK.compare("timeline")==0)
-			{
-			ACK = deserialize(auxiliar +len);
-			int number=stoi(ACK);
-				for(int i=0;i<number;i++)
-				{
-					len=len+ ACK.length()+4;
-					ACK = deserialize(auxiliar +len );
-					cout << ACK<<". ";
-					len=len+ ACK.length()+4;
-					ACK = deserialize(auxiliar +len );
-					cout << ACK<<endl;
-				}
-				break;
-			}
-			else
-			{
+			if(ACK.compare("mybaas")==0){
+			  ACK = deserialize(auxiliar +len);
+			  int number=stoi(ACK);
+				  for(int i=0;i<number;i++)
+				  {
+					  len=len+ ACK.length()+4;
+					  ACK = deserialize(auxiliar +len );
+					  cout << ACK<<". ";
+					  len=len+ ACK.length()+4;
+					  ACK = deserialize(auxiliar +len );
+					  cout << ACK<<endl;
+				  }
+				  break;
+			}else if(ACK.compare("timeline")==0){
+			  ACK = deserialize(auxiliar + len);
+			  int number=stoi(ACK);
+				  for(int i=0;i<number;i++)
+				  {
+					  len=len+ ACK.length()+4;
+					  ACK = deserialize(auxiliar +len );
+					  cout << "@" << ACK<<": ";
+					  len=len+ ACK.length()+4;
+					  ACK = deserialize(auxiliar +len );
+					  cout << ACK <<endl;
+				  }
+				  break;
+			}else{
 			cout << "ACK Recibido" << endl;
 			cout << ACK;
 			ACK = deserialize(auxiliar + ACK.length() + 4);
@@ -258,6 +268,7 @@ void follow(string user){
     cout << "You are now unfollowing " << follow << endl;
   }
 };
+
 void timeline(string user)
 {
   string message;

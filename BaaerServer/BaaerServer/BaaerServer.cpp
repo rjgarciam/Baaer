@@ -155,7 +155,7 @@ string timeline(const string& username)
 			{
 				itoa(rit->second.id,indent,10);
 				string iden=string(indent);
-				msg=msg+serialize(indent )+serialize(rit->second.content );
+        msg=msg+ serialize(rit->second.user_name) + serialize(rit->second.content );
 				++count;
 			}
 	  }
@@ -260,13 +260,12 @@ int receive(SOCKET ClientSocket){ //return 0 = OK
 			//    Enviar ACK
 			////////////////////////////////////////////////////////////////////////////////
 			// Send an initial buffer: sendbuf contiene la frase que mandas
-			if (type=="2")
-			{
+			if (type=="2"){
+				ACK =serialize("mybaas")+msg;
+			}else if (type=="5"){
 				ACK =serialize("timeline")+msg;
-			}
-			else
-			{
-			ACK = serialize("ACK") + serialize(doneStr);
+			}else{
+			  ACK = serialize("ACK") + serialize(doneStr);
 			}
 			iResult=enviar(ACK);
 			cout << "\nACK enviado!";
