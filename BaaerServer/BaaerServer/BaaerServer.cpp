@@ -28,7 +28,7 @@ struct Users
 //map<string,time_t> LoggedIn;
 map<unsigned int, Messages> Global_messages;
 map<string,Users> Global_users;
-
+mutex iniciate_Mutex;
 //map<string,time_t>::iterator itLogged = LoggedIn.begin();
 
 bool addLogged(string username){ // 0 OK, 1 error
@@ -117,29 +117,44 @@ int enviar(const string& mensaje)
 }
 
 //global messages[ident].
-string print_timeline(const string& user_name)
+void print_timeline(const string& user_name)
 {
   map<unsigned int, Messages>::reverse_iterator rit;
-  int count = 0;
+  int count = 0, proba;
   string msg;
   char *cont=new char;
    char* indent= new char;
   int length=Global_messages.size();
+  int iResult, iSendResult, doneInt;
+	char recvbuf[DEFAULT_BUFLEN];
+	char *temporal;
+	int recvbuflen = DEFAULT_BUFLEN;
+	string user, ACK;
   cout << endl << "Printing " << user_name << " timeline" << endl;
-  
+  iniciate_Mutex.lock();
+  proba=enviar(serialize("mybaas"));
+  iniciate_Mutex.unlock();
   for (rit=Global_messages.rbegin(); rit!=Global_messages.rend(); ++rit) {
     if (rit->second.user_name == user_name) {
 		  itoa(rit->second.id,indent,10);
 		  string iden=string(indent);
-		  msg=msg+serialize(indent )+serialize( rit->second.content );
+		  iniciate_Mutex.lock();
+		  msg=serialize(indent );
+		  proba=enviar(msg);
+		  iniciate_Mutex.unlock();
+		  iniciate_Mutex.lock();
+		  msg=serialize( rit->second.content );
+		  proba=enviar(msg);
+		  iniciate_Mutex.unlock();
 		  ++count;
 	  }
 	}
 	itoa(count,cont,10);
-	msg=serialize(cont)+msg;
+	msg=serialize("fin");
+	proba=enviar(msg);
   //cout << "----------------" << endl;
 
-  return msg;
+  //return msg;
 }
 
 string timeline(const string& username)
@@ -190,7 +205,9 @@ int receive(SOCKET ClientSocket){ //return 0 = OK
 
 	// Receive until the peer shuts down the connection
 	do {
+		iniciate_Mutex.lock();
 		iResult = recv(ClientSocket, recvbuf, recvbuflen, 0);
+		iniciate_Mutex.unlock();
 		if (iResult > 0) {
 			////////////////////////////////////////////////////////////////////////////////
 			//    recibir datos y volcarlos en recvbuf
@@ -213,29 +230,35 @@ int receive(SOCKET ClientSocket){ //return 0 = OK
 			    //LogIn a user
 			    user = deserialize(temporal + 5);
 			    cout << "Username: @" << user << " has logged in" << endl;
+				iniciate_Mutex.lock();
 			    doneInt = addLogged(user);
+				iniciate_Mutex.unlock();
 			    doneStr = to_string(doneInt);
         }else if(type == "1"){
           //Send new Baa
           tempMessage.user_name = deserialize(temporal + 5);
+		  iniciate_Mutex.lock();
           cout << "Username: @" << tempMessage.user_name << " has Baaed" << endl;
           tempMessage.content = deserialize(temporal + 5 + tempMessage.user_name.length() + 4);
           tempMessage.id = last_id; ++last_id;
           tempMessage.timestamp = time(0);
           doneInt = newBaa(tempMessage);
+		  iniciate_Mutex.unlock();
           doneStr = to_string(doneInt);
         }else if(type == "2"){
 			//My baas
 			user = deserialize(temporal + 5);
-			msg=print_timeline(user);     
+			print_timeline(user);     
 			//si queremos más metemos un contador de 10 y opcion para meter más
         }else if(type == "3"){
 			    //Unbaa
 		  user = deserialize(temporal + 5);
 		  //cout << "Username: " << user << " is removing a tweet";
+		  iniciate_Mutex.lock();
           data = deserialize(temporal + 5 + user.length() + 4);
           //cout << data;
           doneInt = unBaa(user,data);
+		  iniciate_Mutex.unlock();
           doneStr = to_string(doneInt);
           if(doneInt == 0){
             cout << "User: @" << user << " has removed a tweet with ID: " << data << endl;
@@ -246,9 +269,11 @@ int receive(SOCKET ClientSocket){ //return 0 = OK
 			    //Follow/Unfollow an usser
 		    user = deserialize(temporal + 5);
 		    //cout << "\n\nUsername: " << user;
+			iniciate_Mutex.lock();
 			data = deserialize(temporal + 5 + user.length() + 4);
 			//cout << data;
 			doneInt = Follow(user,data);
+			iniciate_Mutex.lock();
 			doneStr = to_string(doneInt);
           if(doneInt == 0){
             cout << "User: @" << user << " has started following  @" << data << endl;
@@ -282,13 +307,19 @@ int receive(SOCKET ClientSocket){ //return 0 = OK
 			////////////////////////////////////////////////////////////////////////////////
 			// Send an initial buffer: sendbuf contiene la frase que mandas
 			if (type=="2"){
-				ACK =serialize("mybaas")+msg;
+				
 			}else if (type=="5"){
 				ACK =serialize("timeline")+msg;
+				iniciate_Mutex.lock();
+				iResult=enviar(ACK);
+				iniciate_Mutex.unlock();
 			}else{
 			  ACK = serialize("ACK") + serialize(doneStr);
+			  iniciate_Mutex.lock();
+			  iResult=enviar(ACK);
+			  iniciate_Mutex.unlock();
 			}
-			iResult=enviar(ACK);
+			
 			//cout << "\nACK enviado!";
 			if (iResult == SOCKET_ERROR) {
 				printf("send failed with error: %d\n", WSAGetLastError());
@@ -319,6 +350,7 @@ int receive(SOCKET ClientSocket){ //return 0 = OK
   closesocket(ClientSocket);
 	return 0;
 }
+
 
 int set_up_server(int error){
 	WSADATA wsaData;
@@ -351,7 +383,9 @@ int set_up_server(int error){
 	}
 
 	// Create a SOCKET for connecting to server
+	iniciate_Mutex.lock();
 	ListenSocket = socket(result->ai_family, result->ai_socktype, result->ai_protocol);
+	iniciate_Mutex.unlock();
 	if (ListenSocket == INVALID_SOCKET) {
 		printf("socket failed with error: %ld\n", WSAGetLastError());
 		freeaddrinfo(result);
@@ -360,7 +394,9 @@ int set_up_server(int error){
 	}
 
 	// Setup the TCP listening socket
+	iniciate_Mutex.lock();
 	iResult = ::bind(ListenSocket, result->ai_addr, (int)result->ai_addrlen);
+	iniciate_Mutex.unlock();
 	if (iResult == SOCKET_ERROR) {
 		printf("bind failed with error: %d\n", WSAGetLastError());
 		freeaddrinfo(result);

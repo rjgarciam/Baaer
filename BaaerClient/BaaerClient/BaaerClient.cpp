@@ -54,21 +54,38 @@ int send_msg(SOCKET ConnectSocket, char* sendbuf, int longitud){ // return 0 = O
 			ACK = deserialize(auxiliar);
 			len=ACK.length()+4;
 			if(ACK.compare("mybaas")==0){
-			  ACK = deserialize(auxiliar +len);
-			  int number=stoi(ACK);
-        if(number == 0){
-          cout << "There are no Baas to display" << endl;
-        }else{
-				  for(int i=0;i<number;i++)
-				  {
-					  len=len+ ACK.length()+4;
-					  ACK = deserialize(auxiliar +len );
-					  cout << ACK<<". ";
-					  len=len+ ACK.length()+4;
-					  ACK = deserialize(auxiliar +len );
+				  while(1)
+					
+					  iResult = recv(ConnectSocket, recvbuf, recvbuflen, 0);
+					 if (iResult > 0) {
+						//Recibir
+						auxiliar = new char[DEFAULT_BUFLEN+1];
+						auxiliar[DEFAULT_BUFLEN] = '\0';
+						for (int ii = 0; ii < DEFAULT_BUFLEN; ii++){
+							auxiliar[ii] = recvbuf[ii];
+						}
+					 }
+					  ACK = deserialize(auxiliar );
+					  if(ACK.compare("fin")==0)
+					{
+						break;
+					}
+					  cout << ACK<<".    ";
+					  iResult = recv(ConnectSocket, recvbuf, recvbuflen, 0);
+					 if (iResult > 0) {
+						//Recibir
+						auxiliar = new char[DEFAULT_BUFLEN+1];
+						auxiliar[DEFAULT_BUFLEN] = '\0';
+						for (int ii = 0; ii < DEFAULT_BUFLEN; ii++){
+							auxiliar[ii] = recvbuf[ii];
+						}
+					  ACK = deserialize(auxiliar );
+					  if(ACK.compare("fin")==0)
+					{
+						break;
+					}
 					  cout << ACK<<endl;
 				  }
-        }
 				  break;
 			}else if(ACK.compare("timeline")==0){
 			  ACK = deserialize(auxiliar + len);
@@ -222,22 +239,42 @@ bool set_user(){
   string message;
   int isOk;
 
-  cout << "Introduce your username: ";
+  cout << "Introduce your username, maximum 30 characters: ";
   getline(cin,username);
-  message =serialize("0") + serialize(username);
-  isOk = prepare_send(message);
+  if(username.length()<=30)
+  {
+	message =serialize("0") + serialize(username);
+	isOk = prepare_send(message);
+  }
+  else
+  {
+	cout<<"te has pasao quillo"<<endl;
+	isOk=1;
+  }
+  
   return isOk;
 };
 
 
 bool new_baa(string user){
-  string message,baa;
+  string message, baa;
   bool isOk;
-  cout << "Baa: ";
+  int max_input;
+  cout << "Baa maximum 400 characters: ";
   cin.ignore();cin.clear();
   getline(cin,baa);
-  message =serialize("1") + serialize(username) + serialize(baa);
-  isOk = prepare_send(message);
+    if(baa.length()<=400)
+  {
+	message =serialize("1") + serialize(username) + serialize(baa);
+ 
+	isOk = prepare_send(message);
+  }
+  else
+  {
+	cout<<"te has pasao quillo"<<endl;
+	isOk=1;
+  }
+  
   return isOk;
 };
 
