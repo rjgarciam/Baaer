@@ -452,12 +452,5 @@ int __cdecl main(void) {
 	// cleanup
   closesocket(ListenSocket);
 	WSACleanup();
-	for(int ct=0;ct<threads.size();ct++)
-	{
-		if(threads[ct].joinable())
-		{
-			threads.erase(threads.begin()+ct-1);
-		}
-	}
 	return 0;
 }
