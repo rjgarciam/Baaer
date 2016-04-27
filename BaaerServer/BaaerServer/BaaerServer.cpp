@@ -25,12 +25,27 @@ struct Users
   int following;
 };
 
-
-map<unsigned int, Messages> Global_messages;
-map<string,Users> Global_users;
+map<unsigned int, Messages> Global_messages;      //This the way in which we chose to implement our Map to all Messages
+map<string,Users> Global_users;                   //This the way in which we chose to implement our Map to all Users
 mutex iniciate_Mutex;
+vector <thread> threads;                          //This the way in which we chose to implement our threads vector
 
+// The following function enables us to prepare the information for a transmission between the client and server by serializing the vector into an array of characters
+string serialize(const string& str)
+{
+	int len = str.length();
+	const string strlen((char*)&len, 4);
+	return strlen + str;
+}
 
+// This function performs the opposite operation of the serialize function defined previously. It obtains the original vector from the array of characters
+string deserialize(const char* str)
+{
+	const int len = *(const int*)(str);
+	return string(str + 4, len);
+}
+
+// The following function is employed to setting up/initializing a user
 bool addLogged(string username)
 { // A 0 value represents that the operation has taken place successfully, a 1 represents an error
   if(Global_users.find(username) != Global_users.end())
@@ -55,7 +70,7 @@ bool addLogged(string username)
   }
 }
 
-
+// The following function is employed to create a new baa
 bool newBaa(Messages baaData)
 {
   Global_messages.insert(pair<int,Messages>(baaData.id,baaData));
@@ -63,90 +78,7 @@ bool newBaa(Messages baaData)
   return 0;
 }
 
-
-bool unBaa(string username,string baaIdChar)
-{
-  unsigned int baaId;
-  baaId = stoi(baaIdChar);
-  if(Global_users[username].messages.find(baaId) != Global_users[username].messages.end())
-  {
-    Global_users[username].messages.erase(baaId);
-    Global_messages.erase(baaId);
-    return 0;
-  }
-  else
-  {
-    return 1;
-  }
-}
-
-// This function works in the following way:
-//	--> A 0 value is used to insert/begin following someone
-//	--> A 1 value is used to erase/stop following someone
-//	--> A 2 value states that there no user exists that is employing that username
-
-int Follow(string username,string follow)
-{ 
-  if(Global_users.find(follow) != Global_users.end())
-  {
-    if(Global_users[username].follows.find(follow) != Global_users[username].follows.end())
-	{
-      map<string,bool>::iterator itFollow;
-      itFollow = Global_users[username].follows.find(follow);
-      Global_users[username].follows.erase(itFollow);
-      Global_users[username].following--;
-      return 1;
-    }
-	else
-	{
-      Global_users[username].follows.insert(pair<string,bool>(follow,0));
-      Global_users[username].following++;
-      return 0;
-    }
-  }
-  else
-  {
-    return 2;
-  }
-}
-
-
-
-//This the way in which we chose to implement our threads vector
-
-vector <thread> threads;
-
-string serialize(const string& str)
-{
-	int len = str.length();
-	const string strlen((char*)&len, 4);
-	return strlen + str;
-}
-
-string deserialize(const char* str)
-{
-	const int len = *(const int*)(str);
-	return string(str + 4, len);
-}
-
-
-
-int enviar(const string& mensaje)
-{
-	int iResult, longitud;
-	char* send_char;
-	send_char = new char[mensaje.length() + 1];
-	longitud=mensaje.length();
-	for (int ii = 0; ii < mensaje.length(); ii++)
-	{ 
-		send_char[ii] = mensaje[ii]; 
-	}
-	iResult = send(ClientSocket, send_char, longitud, 0);
-	delete[] send_char;
-	return iResult;
-}
-
-//global messages[ident].
+// This function allows the user to request his own timeline, in other words, to ask the server to provide him/her with his own baas
 string print_timeline(const string& user_name, int PagID)
 {
   map<unsigned int, Messages>::reverse_iterator rit;
@@ -188,6 +120,53 @@ string print_timeline(const string& user_name, int PagID)
   return msg;
 }
 
+// This function is employed by the user to delete one of his/her previous baas
+bool unBaa(string username,string baaIdChar)
+{
+  unsigned int baaId;
+  baaId = stoi(baaIdChar);
+  if(Global_users[username].messages.find(baaId) != Global_users[username].messages.end())
+  {
+    Global_users[username].messages.erase(baaId);
+    Global_messages.erase(baaId);
+    return 0;
+  }
+  else
+  {
+    return 1;
+  }
+}
+
+// This function works in the following way:
+//	--> A 0 value is used to insert/begin following someone
+//	--> A 1 value is used to erase/stop following someone
+//	--> A 2 value states that there no user exists that is employing that username
+int Follow(string username,string follow)
+{ 
+  if(Global_users.find(follow) != Global_users.end())
+  {
+    if(Global_users[username].follows.find(follow) != Global_users[username].follows.end())
+	{
+      map<string,bool>::iterator itFollow;
+      itFollow = Global_users[username].follows.find(follow);
+      Global_users[username].follows.erase(itFollow);
+      Global_users[username].following--;
+      return 1;
+    }
+	else
+	{
+      Global_users[username].follows.insert(pair<string,bool>(follow,0));
+      Global_users[username].following++;
+      return 0;
+    }
+  }
+  else
+  {
+    return 2;
+  }
+}
+
+// This function allows a user to see the timeline of the people followed by him
 string timeline(const string& username, int PagID)
 {
   map<unsigned int, Messages>::reverse_iterator rit;
@@ -242,6 +221,21 @@ bool log_out(string username)
   {
       return 1;
   }
+}
+
+int enviar(const string& mensaje)
+{
+	int iResult, longitud;
+	char* send_char;
+	send_char = new char[mensaje.length() + 1];
+	longitud=mensaje.length();
+	for (int ii = 0; ii < mensaje.length(); ii++)
+	{ 
+		send_char[ii] = mensaje[ii]; 
+	}
+	iResult = send(ClientSocket, send_char, longitud, 0);
+	delete[] send_char;
+	return iResult;
 }
 
 int receive(SOCKET ClientSocket){

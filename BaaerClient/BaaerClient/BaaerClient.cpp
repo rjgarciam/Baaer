@@ -157,7 +157,6 @@ int send_msg(SOCKET ConnectSocket, char* sendbuf, int longitud){ // return 0 = O
 	return ServerOk;
 }
 
-
 SOCKET connect(){
 	WSADATA wsaData;
 	SOCKET ConnectSocket = INVALID_SOCKET;
@@ -233,7 +232,6 @@ SOCKET connect(){
 return ConnectSocket;
 }
 
-
 int prepare_send(string msg){
 	SOCKET ConnectSocket;
 	char* send_char;
@@ -265,7 +263,6 @@ SOCKET send_conection(string msg)
 }
 
 // The following function is employed to setting up/initializing a user
-
 bool set_user(){
 	string message;
 	int isOk;
@@ -310,7 +307,6 @@ bool new_baa(string user){
 };
 
 // This function allows the user to request his own timeline, in other words, to ask the server to provide him/her with his own baas
-
 void my_baas(string user, int PageCounter)
 {
 	string message;
@@ -323,7 +319,6 @@ void my_baas(string user, int PageCounter)
 }
 
 // This function is employed by the user to delete one of his/her previous baas
-
 bool unbaa(string user){
 	string message;
 	char *baaIdChar = new char;
@@ -383,7 +378,6 @@ void follow(string user){
 };
 
 // This function allows a user to see the timeline of the people followed by him
-
 void timeline(string user, int PageCounter)
 {
 	string message;
@@ -396,7 +390,6 @@ void timeline(string user, int PageCounter)
 }
 
 // This function allows a user to logout from the system correctly in order to be able to log in again
-
 bool log_out(string user)
 {
 	string message;
