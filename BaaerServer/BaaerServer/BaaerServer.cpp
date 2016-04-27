@@ -73,8 +73,10 @@ bool addLogged(string username)
 // The following function is employed to create a new baa
 bool newBaa(Messages baaData)
 {
+  iniciate_Mutex.lock();
   Global_messages.insert(pair<int,Messages>(baaData.id,baaData));
   Global_users[baaData.user_name].messages.insert(pair<unsigned int, bool>(baaData.id,0));
+  iniciate_Mutex.unlock();
   return 0;
 }
 
@@ -115,8 +117,6 @@ string print_timeline(const string& user_name, int PagID)
 	itoa(countpage,cont,10);
   itoa(PagID,page,10);
 	msg=serialize(cont)+ msg +serialize(page);
-  //cout << "----------------" << endl;
-
   return msg;
 }
 
@@ -127,8 +127,10 @@ bool unBaa(string username,string baaIdChar)
   baaId = stoi(baaIdChar);
   if(Global_users[username].messages.find(baaId) != Global_users[username].messages.end())
   {
+    iniciate_Mutex.lock();
     Global_users[username].messages.erase(baaId);
     Global_messages.erase(baaId);
+    iniciate_Mutex.unlock();
     return 0;
   }
   else
@@ -149,14 +151,18 @@ int Follow(string username,string follow)
 	{
       map<string,bool>::iterator itFollow;
       itFollow = Global_users[username].follows.find(follow);
+      iniciate_Mutex.lock();
       Global_users[username].follows.erase(itFollow);
       Global_users[username].following--;
+      iniciate_Mutex.unlock();
       return 1;
     }
 	else
 	{
+      iniciate_Mutex.lock();
       Global_users[username].follows.insert(pair<string,bool>(follow,0));
       Global_users[username].following++;
+      iniciate_Mutex.unlock();
       return 0;
     }
   }
@@ -229,12 +235,14 @@ int enviar(const string& mensaje)
 	char* send_char;
 	send_char = new char[mensaje.length() + 1];
 	longitud=mensaje.length();
+  iniciate_Mutex.lock();
 	for (int ii = 0; ii < mensaje.length(); ii++)
 	{ 
 		send_char[ii] = mensaje[ii]; 
 	}
 	iResult = send(ClientSocket, send_char, longitud, 0);
 	delete[] send_char;
+  iniciate_Mutex.unlock();
 	return iResult;
 }
 
@@ -277,7 +285,9 @@ int receive(SOCKET ClientSocket){
 
 			    user = deserialize(temporal + 5);
 			    cout << "Username: @" << user << " has logged in" << endl;
+          iniciate_Mutex.lock();
 			    doneInt = addLogged(user);
+          iniciate_Mutex.unlock();
 			    doneStr = to_string(doneInt);
         }else if(type == "1"){
           //A new Baa is sent
@@ -294,26 +304,26 @@ int receive(SOCKET ClientSocket){
           pageID = stoi(deserialize(temporal + 5 + user.length() + 4));
 			    msg=print_timeline(user,pageID);     
         }else if(type == "3"){
-			          //Baa elimination --> Unbaa
-		        user = deserialize(temporal + 5);
-		        //cout << "Username: " << user << " is removing a tweet";
-                data = deserialize(temporal + 5 + user.length() + 4);
-                //cout << data;
-                doneInt = unBaa(user,data);
-                doneStr = to_string(doneInt);
+          //Baa elimination --> Unbaa
+          user = deserialize(temporal + 5);
+          //cout << "Username: " << user << " is removing a tweet";
+          data = deserialize(temporal + 5 + user.length() + 4);
+          //cout << data;
+          doneInt = unBaa(user,data);
+          doneStr = to_string(doneInt);
           if(doneInt == 0){
             cout << "User: @" << user << " has removed a tweet with ID: " << data << endl;
           }else{
             cout << "The user @" << user << " has received an error trying to remove a tweet with ID: " << data << endl;
           }
         }else if(type == "4"){
-			    //Follow/Unfollow an usser
-		    user = deserialize(temporal + 5);
-		    //cout << "\n\nUsername: " << user;
-			data = deserialize(temporal + 5 + user.length() + 4);
-			//cout << data;
-			doneInt = Follow(user,data);
-			doneStr = to_string(doneInt);
+          //Follow/Unfollow an usser
+          user = deserialize(temporal + 5);
+          //cout << "\n\nUsername: " << user;
+          data = deserialize(temporal + 5 + user.length() + 4);
+          //cout << data;
+          doneInt = Follow(user,data);
+          doneStr = to_string(doneInt);
           if(doneInt == 0){
             cout << "User: @" << user << " has started following  @" << data << endl;
           }else if(doneInt == 1){
@@ -322,11 +332,11 @@ int receive(SOCKET ClientSocket){
             cout << "The user @" << user << " has received an error trying to follow @" << data << endl;
           }
         }else if(type == "5"){
-			    //Baas timeline
-			      user = deserialize(temporal + 5);
-            pageID = stoi(deserialize(temporal + 5 + user.length() + 4));
-		          //cout << "\n\nUsername: " << user;
-			      msg=timeline(user,pageID);
+          //Baas timeline
+          user = deserialize(temporal + 5);
+          pageID = stoi(deserialize(temporal + 5 + user.length() + 4));
+          //cout << "\n\nUsername: " << user;
+          msg=timeline(user,pageID);
         }else if(type == "6"){
           user = deserialize(temporal + 5);
 			    doneInt = log_out(user);
@@ -343,7 +353,7 @@ int receive(SOCKET ClientSocket){
 				delete[] temporal; 
 
 			////////////////////////////////////////////////////////////////////////////////
-			//    Send ACD
+			//    Send ACK
 			////////////////////////////////////////////////////////////////////////////////
 
 			// Send an initial buffer: sendbuf contiene la frase que mandas
@@ -355,7 +365,6 @@ int receive(SOCKET ClientSocket){
 			  ACK = serialize("ACK") + serialize(doneStr);
 			}
 			iResult=enviar(ACK);
-			//cout << "\nACK enviado!";
 			if (iResult == SOCKET_ERROR) {
 				printf("send failed with error: %d\n", WSAGetLastError());
 				closesocket(ClientSocket);
@@ -427,7 +436,9 @@ int set_up_server(int error){
 	}
 
 	// Create a SOCKET for connecting to server
+  iniciate_Mutex.lock();
 	ListenSocket = socket(result->ai_family, result->ai_socktype, result->ai_protocol);
+  iniciate_Mutex.unlock();
 	if (ListenSocket == INVALID_SOCKET) {
 		printf("socket failed with error: %ld\n", WSAGetLastError());
 		freeaddrinfo(result);
@@ -437,7 +448,9 @@ int set_up_server(int error){
 
 	// Setup the TCP listening socket
 
+  iniciate_Mutex.lock();
 	iResult = ::bind(ListenSocket, result->ai_addr, (int)result->ai_addrlen);
+  iniciate_Mutex.unlock();
 	if (iResult == SOCKET_ERROR) {
 		printf("bind failed with error: %d\n", WSAGetLastError());
 		freeaddrinfo(result);
@@ -495,6 +508,14 @@ int __cdecl main(void)
 		threads.push_back(thread(ThreadFunction, ClientSocket));
 		// The detach utility tool allows the threads to be run in parallel, since the threads themselves are the ones that actually parallelize the code 
 		threads[threads.size()-1].detach();
+    for(auto ct=threads.begin(); ct!=threads.end(); ++ct){
+      if(ct->joinable() == false){
+        iniciate_Mutex.lock();
+        threads.erase(ct);
+        iniciate_Mutex.unlock();
+        break;
+      }
+    }
 	}
 	
 	// cleanup
