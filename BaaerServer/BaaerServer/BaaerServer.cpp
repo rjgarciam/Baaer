@@ -236,7 +236,7 @@ int enviar(const string& mensaje)
 	send_char = new char[mensaje.length() + 1];
 	longitud=mensaje.length();
   iniciate_Mutex.lock();
-	for (int ii = 0; ii < mensaje.length(); ii++)
+	for (unsigned int ii = 0; ii < mensaje.length(); ii++)
 	{ 
 		send_char[ii] = mensaje[ii]; 
 	}
@@ -249,7 +249,7 @@ int enviar(const string& mensaje)
 int receive(SOCKET ClientSocket){
 	int iResult, iSendResult, doneInt,pageID;
 	char recvbuf[DEFAULT_BUFLEN];
-	char *temporal, *ACK_char;
+	char *temporal;
 	int recvbuflen = DEFAULT_BUFLEN;
 	string user, type, data, ACK, doneStr,msg;
     Messages tempMessage;
@@ -272,7 +272,7 @@ int receive(SOCKET ClientSocket){
 
 				size_t len = strlen(temporal);
 				char* nueva = new char[len+ 1];
-				for (int ii = 0; ii < (len+1); ii++)
+				for (unsigned int ii = 0; ii < (len+1); ii++)
 				{
 				nueva[ii] = temporal[ii];
 				}
