@@ -4,6 +4,8 @@
 int argc;
 char **argv;
 string username;
+int pagecount;
+bool newpages;
 
 // The following function enables us to prepare the information for a transmission between the client and server by serializing the vector into an array of characters
 string serialize(const string& str){
@@ -60,59 +62,63 @@ int send_msg(SOCKET ConnectSocket, char* sendbuf, int longitud){ // return 0 = O
 			ACK = deserialize(auxiliar);
 			len=ACK.length()+4;
 			if(ACK.compare("mybaas")==0){
-				  while(1)
-					
-					  iResult = recv(ConnectSocket, recvbuf, recvbuflen, 0);
-					  if (iResult > 0) {
-						// Reception
-						auxiliar = new char[DEFAULT_BUFLEN+1];
-						auxiliar[DEFAULT_BUFLEN] = '\0';
-						for (int ii = 0; ii < DEFAULT_BUFLEN; ii++){
-							auxiliar[ii] = recvbuf[ii];
-						}
-					 }
-					  ACK = deserialize(auxiliar );
-					  if(ACK.compare("fin")==0)
-					{
-						break;
-					}
-					  cout << ACK<<".    ";
-					  iResult = recv(ConnectSocket, recvbuf, recvbuflen, 0);
-					  if (iResult > 0) {
-						// Reception
-						auxiliar = new char[DEFAULT_BUFLEN+1];
-						auxiliar[DEFAULT_BUFLEN] = '\0';
-						for (int ii = 0; ii < DEFAULT_BUFLEN; ii++)
-						{
-							auxiliar[ii] = recvbuf[ii];
-						}
-					    ACK = deserialize(auxiliar );
-					    if(ACK.compare("fin")==0)
-							{
-						     break;
-							}
-					  cout << ACK<<endl; 
-				  }
-				  break;
-			}
-			else if(ACK.compare("timeline")==0){
-			  ACK = deserialize(auxiliar + len);
+
+			  ACK = deserialize(auxiliar +len);
 			  int number=stoi(ACK);
-        if(number == 0)
-		{
-          cout << "There are no Baas to be displayed..." << endl;
-        }
-		else
-		{
+        if(number == 0){
+          cout << "There are no Baas to display" << endl;
+          newpages = 0;
+        }else{
 				  for(int i=0;i<number;i++)
 				  {
 					  len=len+ ACK.length()+4;
 					  ACK = deserialize(auxiliar +len );
-					  cout << "@" << ACK<<": ";
+					  cout << ACK<<". ";
 					  len=len+ ACK.length()+4;
 					  ACK = deserialize(auxiliar +len );
-					  cout << ACK <<endl;
-                  }
+					  cout << ACK << " ";
+            len=len+ ACK.length()+4;
+            ACK = deserialize(auxiliar +len );
+            cout << ACK<<endl;
+				  }
+          len=len+ ACK.length()+4;
+          ACK = deserialize(auxiliar +len );
+          if(ACK.compare("1")==0){
+            newpages = 1;
+          }else{
+            newpages = 0;
+          }
+        }
+        break;
+			}else if(ACK.compare("timeline")==0){
+			  ACK = deserialize(auxiliar + len);
+			  int number=stoi(ACK);
+        if(number == 0){
+          cout << "There are no Baas to be displayed..." << endl;
+          newpages = 0;
+        }
+		    else{
+				  for(int i=0;i<number;i++)
+				  {
+					  len=len+ ACK.length()+4;
+					  ACK = deserialize(auxiliar +len);
+					  len=len+ ACK.length()+4;
+					  ACK = deserialize(auxiliar +len);
+					  cout << ACK << " ";
+            len=len+ ACK.length()+4;
+            ACK = deserialize(auxiliar +len);
+            cout << "@" << ACK << ": ";
+            len=len+ ACK.length()+4;
+            ACK = deserialize(auxiliar +len);
+            cout << ACK<<endl;
+				  }
+          len=len+ ACK.length()+4;
+          ACK = deserialize(auxiliar +len);
+          if(ACK.compare("1")==0){
+            newpages = 1;
+          }else{
+            newpages = 0;
+          }
         }
 				  break;
 			}
@@ -291,10 +297,10 @@ bool new_baa(string user){
 	string message, baa;
 	bool isOk;
 	int max_input;
-	cout << "Maximum allowable length for a baa = 400 characters: ";
+	cout << "Maximum allowable length for a baa = 140 characters: ";
 	cin.ignore();cin.clear();
 	getline(cin,baa);
-	if(baa.length()<=400)
+	if(baa.length()<=140)
 	{
 		message =serialize("1") + serialize(username) + serialize(baa);
  
@@ -311,12 +317,14 @@ bool new_baa(string user){
 
 // This function allows the user to request his own timeline, in other words, to ask the server to provide him/her with his own baas
 
-void my_baas(string user)
+void my_baas(string user, int PageCounter)
 {
 	string message;
 	bool isOk;
 	int iResult;
-	message =serialize("2") + serialize(username);
+  char *newpage=new char;
+  itoa(PageCounter,newpage,10);
+	message =serialize("2") + serialize(username) + serialize(newpage);
 	isOk = prepare_send(message);
 }
 
@@ -327,8 +335,24 @@ bool unbaa(string user){
 	char *baaIdChar = new char;
 	unsigned int baaId;
 	bool isOk;
+  int keep;
+  char nextpage = 'i';
 	cout<<"This is your timeline "<<endl;
-	my_baas(user);
+  keep = 1;
+  pagecount = 0;
+  while(keep == 1){
+    my_baas(user,pagecount);
+    if(newpages){
+      cout << "Press n to see another page, other key to choose a baa from this page" << endl;
+      cin >> nextpage;
+    }
+    if(nextpage == 'n'){
+      ++pagecount;
+      nextpage = 'i';
+    }else{
+      keep = 0;
+    }
+  }
 	cout << "Introduce the id of the Baa to be deleted: ";
 	cin.ignore();cin.clear();
 	cin >> baaId;
@@ -364,14 +388,20 @@ void follow(string user){
   }
 };
 
-void timeline(string user)
+// This function allows a user to see the timeline of the people followed by him
+
+void timeline(string user, int PageCounter)
 {
 	string message;
 	bool isOk;
 	int iResult;
-	message =serialize("5") + serialize(username);
+  char *newpage=new char;
+  itoa(PageCounter,newpage,10);
+	message =serialize("5") + serialize(username) + serialize(newpage);
 	isOk = prepare_send(message);
 }
+
+// This function allows a user to logout from the system correctly in order to be able to log in again
 
 bool log_out(string user)
 {
@@ -386,8 +416,10 @@ int __cdecl main(int ac, char** av) {
 	// Copy ac and av to the global variable
 	argc = ac;
 	argv = av;
-	int option;
+	int option, keep,pagecount;
 	bool check;
+  char nextpage;
+  nextpage = 'i';
 
 	cout << "\n*** Client ***" << endl;
 
@@ -424,7 +456,21 @@ int __cdecl main(int ac, char** av) {
 	}
 		else if(option==2)
 		{
-		my_baas(username);
+      keep = 1;
+		  pagecount = 0;
+      while(keep == 1){
+        my_baas(username,pagecount);
+        if(newpages){
+          cout << "Press n to see another page, other key to finish" << endl;
+          cin >> nextpage;
+        }
+        if(nextpage == 'n'){
+          ++pagecount;
+          nextpage = 'i';
+        }else{
+          keep = 0;
+        }
+      }
 		}
 		else if(option==3)
 		{
@@ -444,7 +490,21 @@ int __cdecl main(int ac, char** av) {
 		}
 		else if(option==5)
 		{
-		timeline(username);
+      keep = 1;
+		  pagecount = 0;
+      while(keep == 1){
+        timeline(username,pagecount);
+        if(newpages){
+          cout << "Press n to see another page, other key to finish" << endl;
+          cin >> nextpage;
+        }
+        if(nextpage == 'n'){
+          ++pagecount;
+          nextpage = 'i';
+        }else{
+          keep = 0;
+        }
+      }
 		}
 		else if(option==6)
 		{

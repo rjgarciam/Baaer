@@ -146,57 +146,59 @@ int enviar(const string& mensaje)
 	return iResult;
 }
 
-// The following funtion is used to print a timeline 
-
-void print_timeline(const string& user_name)
+//global messages[ident].
+string print_timeline(const string& user_name, int PagID)
 {
   map<unsigned int, Messages>::reverse_iterator rit;
-  int count = 0, proba;
+  int count = 0, countpage = 0;
+  int newpage = 0;
   string msg;
+  char timebuff[20];
   char *cont=new char;
+  char *page=new char;
   char* indent= new char;
   int length=Global_messages.size();
-  int iResult, iSendResult, doneInt;
-  char recvbuf[DEFAULT_BUFLEN];
-  char *temporal;
-  int recvbuflen = DEFAULT_BUFLEN;
-  string user, ACK;
-  cout << endl << "Printing " << user_name << " timeline" << endl;
-  iniciate_Mutex.lock();
-  proba=enviar(serialize("mybaas"));
-  iniciate_Mutex.unlock();
-  for (rit=Global_messages.rbegin(); rit!=Global_messages.rend(); ++rit)
-  {
-    if (rit->second.user_name == user_name) 
-	{
+  cout << endl << "Printing " << user_name << " Baas" << endl;
+  
+  for (rit=Global_messages.rbegin(); rit!=Global_messages.rend(); ++rit) {
+    if (rit->second.user_name == user_name) {
 		  itoa(rit->second.id,indent,10);
 		  string iden=string(indent);
-		  iniciate_Mutex.lock();
-		  msg=serialize(indent );
-		  proba=enviar(msg);
-		  iniciate_Mutex.unlock();
-		  iniciate_Mutex.lock();
-		  msg=serialize( rit->second.content );
-		  proba=enviar(msg);
-		  iniciate_Mutex.unlock();
 		  ++count;
+      if(count > (PagID * 4)){
+        strftime(timebuff, 20, "%Y-%m-%d", localtime(&rit->second.timestamp));
+        cout << timebuff << endl;
+        msg=msg+serialize(indent )+ serialize(timebuff) + serialize( rit->second.content );
+        ++newpage;
+        ++countpage;
+        PagID = 0;
+        if(newpage == 4){
+          newpage = 1;
+          PagID = 1;
+          break;
+        }
+      }
 	  }
 	}
-	itoa(count,cont,10);
-	msg=serialize("fin");
-	proba=enviar(msg);
+	itoa(countpage,cont,10);
+  itoa(PagID,page,10);
+	msg=serialize(cont)+ msg +serialize(page);
+  //cout << "----------------" << endl;
 
+  return msg;
 }
 
-string timeline(const string& username)
+string timeline(const string& username, int PagID)
 {
   map<unsigned int, Messages>::reverse_iterator rit;
-  int count = 0;
+  int count = 0, countpage = 0, newpage = 0;
   string msg, folo;
+  char timebuff[20];
   char *cont=new char;
+  char *page=new char;
   char* indent= new char;
   int length=Global_messages.size();
-  cout << endl << "Printing " << username << " Baas" << endl;
+  cout << endl << "Printing " << username << " timeline" << endl;
   for (rit=Global_messages.rbegin(); rit!=Global_messages.rend(); ++rit) 
   {
 		folo=rit->second.user_name;
@@ -205,12 +207,25 @@ string timeline(const string& username)
 			{
 				itoa(rit->second.id,indent,10);
 				string iden=string(indent);
-				msg=msg+ serialize(rit->second.user_name) + serialize(rit->second.content );
-				++count;
+		    ++count;
+        if(count > (PagID * 4)){
+          strftime(timebuff, 20, "%Y-%m-%d", localtime(&rit->second.timestamp));
+          cout << timebuff << endl;
+          msg=msg+serialize(indent )+ serialize(timebuff) + serialize( rit->second.user_name ) + serialize( rit->second.content );
+          ++newpage;
+          ++countpage;
+          PagID = 0;
+          if(newpage == 4){
+            newpage = 1;
+            PagID = 1;
+            break;
+          }
+        }
 			}
   }
-  itoa(count,cont,10);
-  msg=serialize(cont)+msg;
+	itoa(countpage,cont,10);
+  itoa(PagID,page,10);
+	msg=serialize(cont)+ msg +serialize(page);
 
   return msg;
 }
@@ -230,7 +245,7 @@ bool log_out(string username)
 }
 
 int receive(SOCKET ClientSocket){
-	int iResult, iSendResult, doneInt;
+	int iResult, iSendResult, doneInt,pageID;
 	char recvbuf[DEFAULT_BUFLEN];
 	char *temporal, *ACK_char;
 	int recvbuflen = DEFAULT_BUFLEN;
@@ -240,11 +255,8 @@ int receive(SOCKET ClientSocket){
 	// Reception process is maintained until the peer shuts down the connection
 
 	do {
-		iniciate_Mutex.lock();
 		iResult = recv(ClientSocket, recvbuf, recvbuflen, 0);
-		iniciate_Mutex.unlock();
-		if (iResult > 0) 
-		{
+		if (iResult > 0) {
 			////////////////////////////////////////////////////////////////////////////////
 			//    Received data is introduced into recbuf 
 			////////////////////////////////////////////////////////////////////////////////
@@ -271,130 +283,91 @@ int receive(SOCKET ClientSocket){
 
 			    user = deserialize(temporal + 5);
 			    cout << "Username: @" << user << " has logged in" << endl;
-				iniciate_Mutex.lock();
 			    doneInt = addLogged(user);
-				iniciate_Mutex.unlock();
 			    doneStr = to_string(doneInt);
-
-				}
-				else if(type == "1")
-				{
-
-				//A new Baa is sent
-
-				tempMessage.user_name = deserialize(temporal + 5);
-				iniciate_Mutex.lock();
-				cout << "Username: @" << tempMessage.user_name << " has Baaed" << endl;
-				tempMessage.content = deserialize(temporal + 5 + tempMessage.user_name.length() + 4);
-				tempMessage.id = last_id; ++last_id;
-				tempMessage.timestamp = time(0);
-				doneInt = newBaa(tempMessage);
-				iniciate_Mutex.unlock();
-				doneStr = to_string(doneInt);
-				}
-				else if(type == "2")
-				{
-				//My baas
-				user = deserialize(temporal + 5);
-				print_timeline(user);     
-				// If we wish to introduce more baas we increase the counter up to ten and add the option to introduce more baas
-				}
-				else if(type == "3")
-				{
-					//Baa elimination --> Unbaa
-
-					user = deserialize(temporal + 5);
-					iniciate_Mutex.lock();
-					data = deserialize(temporal + 5 + user.length() + 4);
-					doneInt = unBaa(user,data);
-					iniciate_Mutex.unlock();
-					doneStr = to_string(doneInt);
-					if(doneInt == 0)
-					{
-						cout << "User: @" << user << " has removed the baa with ID: " << data << endl;
-					}
-					else
-						{
-						cout << "The user @" << user << " has encountered an error trying to remove the baa with ID: " << data << endl;
-						}
-				}
-				else if(type == "4")
-				{
-					// Follow/Unfollow an user
-					user = deserialize(temporal + 5);
-					iniciate_Mutex.lock();
-					data = deserialize(temporal + 5 + user.length() + 4);
-					doneInt = Follow(user,data);
-					iniciate_Mutex.lock();
-					doneStr = to_string(doneInt);
-					if(doneInt == 0){
-						cout << "User: @" << user << " has started following  @" << data << endl;
-					}
-					else if(doneInt == 1)
-					{
-					cout << "The user @" << user << " has stopped following  @" << data << endl;
-					}
-					else
-					{
-					cout << "The user @" << user << " has encountered an error trying to follow @" << data << endl;
-					}
-				}
-				else if(type == "5")
-				{
-				// Baas timeline
-				user = deserialize(temporal + 5);
-				msg=timeline(user);
-				}
-				else if(type == "6")
-				{
-					user = deserialize(temporal + 5);
-					doneInt = log_out(user);
-					doneStr = to_string(doneInt);
-					if(doneInt == 0)
-					{
-						cout << "User: @" << user << " has logged out "<< endl;
-					}
-					else
-					{
-						cout << "User @" << user << " has encountered an error trying to logout" << endl;
-					}
-				}
-				else
-				{
-				cout << "Error" << endl;
-				}
+        }else if(type == "1"){
+          //A new Baa is sent
+          tempMessage.user_name = deserialize(temporal + 5);
+          cout << "Username: @" << tempMessage.user_name << " has Baaed" << endl;
+          tempMessage.content = deserialize(temporal + 5 + tempMessage.user_name.length() + 4);
+          tempMessage.id = last_id; ++last_id;
+          tempMessage.timestamp = time(0);
+          doneInt = newBaa(tempMessage);
+          doneStr = to_string(doneInt);
+        }else if(type == "2"){
+			    //My baas
+			    user = deserialize(temporal + 5);
+          pageID = stoi(deserialize(temporal + 5 + user.length() + 4));
+			    msg=print_timeline(user,pageID);     
+        }else if(type == "3"){
+			          //Baa elimination --> Unbaa
+		        user = deserialize(temporal + 5);
+		        //cout << "Username: " << user << " is removing a tweet";
+                data = deserialize(temporal + 5 + user.length() + 4);
+                //cout << data;
+                doneInt = unBaa(user,data);
+                doneStr = to_string(doneInt);
+          if(doneInt == 0){
+            cout << "User: @" << user << " has removed a tweet with ID: " << data << endl;
+          }else{
+            cout << "The user @" << user << " has received an error trying to remove a tweet with ID: " << data << endl;
+          }
+        }else if(type == "4"){
+			    //Follow/Unfollow an usser
+		    user = deserialize(temporal + 5);
+		    //cout << "\n\nUsername: " << user;
+			data = deserialize(temporal + 5 + user.length() + 4);
+			//cout << data;
+			doneInt = Follow(user,data);
+			doneStr = to_string(doneInt);
+          if(doneInt == 0){
+            cout << "User: @" << user << " has started following  @" << data << endl;
+          }else if(doneInt == 1){
+            cout << "The user @" << user << " has stopped following  @" << data << endl;
+          }else{
+            cout << "The user @" << user << " has received an error trying to follow @" << data << endl;
+          }
+        }else if(type == "5"){
+			    //Baas timeline
+			      user = deserialize(temporal + 5);
+            pageID = stoi(deserialize(temporal + 5 + user.length() + 4));
+		          //cout << "\n\nUsername: " << user;
+			      msg=timeline(user,pageID);
+        }else if(type == "6"){
+          user = deserialize(temporal + 5);
+			    doneInt = log_out(user);
+          doneStr = to_string(doneInt);
+          if(doneInt == 0){
+            cout << "User: @" << user << " has logout"<< endl;
+          }else{
+            cout << "User @" << user << " has received an error trying to logout" << endl;
+          }
+        }else{
+          cout << "Error" << endl;
+          // Create error code
+        }
 				delete[] temporal; 
 
 			////////////////////////////////////////////////////////////////////////////////
 			//    Send ACD
 			////////////////////////////////////////////////////////////////////////////////
-			// An initial buffer is sent, sendbuf contains the sentence that is being sent. 
-				if (type=="2")
-				{
-				
-				}
-				else if (type=="5")
-				{
-					ACK =serialize("timeline")+msg;
-					iniciate_Mutex.lock();
-					iResult=enviar(ACK);
-					iniciate_Mutex.unlock();
-				}
-				else
-				{
-					ACK = serialize("ACK") + serialize(doneStr);
-					iniciate_Mutex.lock();
-					iResult=enviar(ACK);
-					iniciate_Mutex.unlock();
-				}
-			
-				if (iResult == SOCKET_ERROR) 
-				{
-					printf("send failed with error: %d\n", WSAGetLastError());
-					closesocket(ClientSocket);
-					WSACleanup();
-					return 1;
-				}
+
+			// Send an initial buffer: sendbuf contiene la frase que mandas
+			if (type=="2"){
+				ACK =serialize("mybaas")+msg;
+			}else if (type=="5"){
+				ACK =serialize("timeline")+msg;
+			}else{
+			  ACK = serialize("ACK") + serialize(doneStr);
+			}
+			iResult=enviar(ACK);
+			//cout << "\nACK enviado!";
+			if (iResult == SOCKET_ERROR) {
+				printf("send failed with error: %d\n", WSAGetLastError());
+				closesocket(ClientSocket);
+				WSACleanup();
+				return 1;
+			}
 		}
 		else if (iResult == 0) 
 		{
@@ -423,7 +396,6 @@ int receive(SOCKET ClientSocket){
 	closesocket(ClientSocket);
 	return 0;
 }
-
 
 int set_up_server(int error){
 	WSADATA wsaData;
@@ -460,13 +432,9 @@ int set_up_server(int error){
 		error = 1;
 	}
 
-	// Create a SOCKET for connecting to the server
-
-	iniciate_Mutex.lock();
+	// Create a SOCKET for connecting to server
 	ListenSocket = socket(result->ai_family, result->ai_socktype, result->ai_protocol);
-	iniciate_Mutex.unlock();
-	if (ListenSocket == INVALID_SOCKET) 
-	{
+	if (ListenSocket == INVALID_SOCKET) {
 		printf("socket failed with error: %ld\n", WSAGetLastError());
 		freeaddrinfo(result);
 		WSACleanup();
@@ -475,11 +443,8 @@ int set_up_server(int error){
 
 	// Setup the TCP listening socket
 
-	iniciate_Mutex.lock();
 	iResult = ::bind(ListenSocket, result->ai_addr, (int)result->ai_addrlen);
-	iniciate_Mutex.unlock();
-	if (iResult == SOCKET_ERROR) 
-	{
+	if (iResult == SOCKET_ERROR) {
 		printf("bind failed with error: %d\n", WSAGetLastError());
 		freeaddrinfo(result);
 		closesocket(ListenSocket);

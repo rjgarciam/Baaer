@@ -23,7 +23,7 @@ using namespace std;
 #pragma comment (lib, "AdvApi32.lib")
 
 
-#define DEFAULT_BUFLEN 512
+#define DEFAULT_BUFLEN 1024
 #define DEFAULT_PORT "27010"
 #include "targetver.h"
 
