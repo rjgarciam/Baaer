@@ -27,7 +27,7 @@ int send_msg(SOCKET ConnectSocket, char* sendbuf, int longitud){ // return 0 = O
 	char recvbuf[DEFAULT_BUFLEN];
 	char* auxiliar;
 	string ACK;
-    int ServerOk = 1;
+  int ServerOk = 1;
 
 	////////////////////////////////////////////////////////////////////////////////
 	//    TRANSMISSION PROCESS
@@ -62,9 +62,8 @@ int send_msg(SOCKET ConnectSocket, char* sendbuf, int longitud){ // return 0 = O
 			ACK = deserialize(auxiliar);
 			len=ACK.length()+4;
 			if(ACK.compare("mybaas")==0){
-
-			  ACK = deserialize(auxiliar +len);
-			  int number=stoi(ACK);
+        ACK = deserialize(auxiliar +len);
+        int number=stoi(ACK);
         if(number == 0){
           cout << "There are no Baas to display" << endl;
           newpages = 0;
@@ -124,22 +123,21 @@ int send_msg(SOCKET ConnectSocket, char* sendbuf, int longitud){ // return 0 = O
 			}
 			else
 			{
-			ACK = deserialize(auxiliar + ACK.length() + 4);
-
-			if (ACK.compare("0") == 0)
-			{ // A 1 value represents an error, a 0 value represents a correct execution
-				ServerOk = 0; // Petition has been correctly processed
-				break;
-			}
-			else if(ACK.compare("2") == 0)
-			{
-				ServerOk = 2; // petition processed correctly
-			break;
-			}
-			else
-			{
-				return 1;
-			}
+			  ACK = deserialize(auxiliar + ACK.length() + 4);
+			  if (ACK.compare("0") == 0)
+			  { // A 1 value represents an error, a 0 value represents a correct execution
+				  ServerOk = 0; // Petition has been correctly processed
+				  break;
+			  }
+			  else if(ACK.compare("2") == 0)
+			  {
+				  ServerOk = 2; // petition processed correctly
+			  break;
+			  }
+			  else
+			  {
+				  return 1;
+			  }
 			}
 			delete[] auxiliar;
 		}
@@ -202,12 +200,9 @@ SOCKET connect(){
 	// Attempt to connect to an address until one connection successfully takes place
 
 	for (ptr = result; ptr != NULL; ptr = ptr->ai_next) {
-
 		// A SOCKET is generated in order to connect to the Server
-
 		ConnectSocket = socket(ptr->ai_family, ptr->ai_socktype,
 		ptr->ai_protocol);
-
 		if (ConnectSocket == INVALID_SOCKET) 
 		{
 			printf("socket failed with an error: %ld\n", WSAGetLastError());
@@ -216,7 +211,6 @@ SOCKET connect(){
 		}
 
 		// Connection to the Server
-
 		iResult = connect(ConnectSocket, ptr->ai_addr, (int)ptr->ai_addrlen);
 		if (iResult == SOCKET_ERROR) 
 		{
@@ -526,5 +520,4 @@ int __cdecl main(int ac, char** av) {
   }
 
 	return 0;
-
 }
